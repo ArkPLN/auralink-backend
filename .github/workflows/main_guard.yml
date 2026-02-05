@@ -24,10 +24,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: 📦 Install Dependencies (安装依赖)
-        run: npm ci
+        run: pnpm install
 
       - name: 🎨 Check Formatting (检查代码美观度)
         # 使用 Prettier 检查，如果不符合规范直接报错
@@ -37,11 +37,11 @@ jobs:
 
       - name: 🧹 Lint Check (代码规范检查)
         # 检查是否有多余的变量、不规范的写法
-        run: npm run lint
+        run: pnpm run lint
 
       - name: 🛠️ Type Check & Build (TS类型检查与构建)
         # 这是最关键的一步，NestJS 编译失败将无法部署
-        run: npm run build
+        run: pnpm run build
 
   # ========================================================
   # 任务二：深度安全扫描 (Deep Security Scan)
@@ -65,7 +65,7 @@ jobs:
       # 2. 依赖包漏洞扫描 (NPM Audit)
       - name: 🦠 Dependency Vulnerabilities (依赖漏洞扫描)
         # 扫描 package-lock.json，如果有高危(high)以上漏洞则报错
-        run: npm audit --audit-level=high
+        run: pnpm audit --audit-level=high
 
       # 3. 文件系统与配置漏洞扫描 (Trivy)
       - name: 🛡️ Trivy Filesystem Scan (生产漏洞扫描)

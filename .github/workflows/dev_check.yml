@@ -26,10 +26,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: 📦 Install Dependencies
-        run: npm ci
+        run: pnpm install
 
       # 开发者在写代码时经常忘格式化，这里只警告不报错，或者你可以选择报错
       - name: 🎨 Check Formatting
@@ -38,7 +38,7 @@ jobs:
 
       - name: 🛠️ TS Build Check (TS编译检查)
         # 这是必须的，确保你的改动没有破坏代码逻辑
-        run: npm run build
+        run: pnpm run build
 
       - name: 🔑 Gitleaks Secret Scan (密钥泄露扫描)
         # 这一步不能省，开发分支泄露了密码也很危险
