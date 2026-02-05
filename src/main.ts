@@ -26,7 +26,8 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(3000);
-  console.log('API 文档地址: http://localhost:3000/reference');
+  await app.listen(process.env.PORT || 3000);
+  console.log(`应用已启动，监听端口 ${process.env.PORT || 3000}`);
+  console.log(`API 文档地址: http://localhost:${process.env.PORT || 3000}/reference`);
 }
 void bootstrap();
