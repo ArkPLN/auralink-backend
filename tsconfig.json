@@ -17,6 +17,6 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
-    "types": ["node", "class-validator", "class-transformer"]
+    "types": ["node", "class-validator", "class-transformer","jest"]
   }
 }
