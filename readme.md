@@ -92,6 +92,9 @@ This repository contains the **Backend API** services powering the AuraLink ecos
     # JWT Secrets
     ACCESS_TOKEN_SECRET=your_super_secret_access_key
     REFRESH_TOKEN_SECRET=your_super_secret_refresh_key
+
+    # Port
+    PORT=3000
     ```
 
 ### Running the App

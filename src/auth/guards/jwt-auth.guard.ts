@@ -10,7 +10,13 @@ interface JwtUser {
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
-  handleRequest<TUser = JwtUser>(err: any, user: any, info: any, context: any, status?: any): TUser {
+  handleRequest<TUser = JwtUser>(
+    err: any,
+    user: any,
+    info: any,
+    context: any,
+    status?: any,
+  ): TUser {
     if (err || !user) {
       if (info instanceof TokenExpiredError) {
         throw new UnauthorizedException({
