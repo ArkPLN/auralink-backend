@@ -101,6 +101,9 @@
     # JWT密钥
     ACCESS_TOKEN_SECRET=您的超级密钥
     REFRESH_TOKEN_SECRET=您的刷新密钥
+
+    # 端口
+    PORT=3000
     ```
 
 ### 运行应用
