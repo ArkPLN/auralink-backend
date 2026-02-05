@@ -1,8 +1,5 @@
 name: 🛡️ Main Guard (生产环境保镖)
 
-# 触发规则：
-# 1. 只有当代码合并进 main (push)
-# 2. 或者针对 main 发起的 Pull Request 时触发
 on:
   push:
     branches: [ "main" ]
@@ -10,84 +7,77 @@ on:
     branches: [ "main" ]
 
 jobs:
-  # ========================================================
-  # 任务一：代码质量与构建检查 (Quality & Build)
-  # ========================================================
   code-quality:
     name: 🏗️ Quality & Build (质量与构建)
     runs-on: ubuntu-latest
     steps:
-      - name: 📥 Checkout Code (拉取代码)
+      - name: 📥 Checkout Code
         uses: actions/checkout@v4
 
-      - name: 🟢 Setup Node.js (设置 Node 环境)
+      # 【新增步骤】安装 pnpm
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9 # 这里建议指定你本地使用的 pnpm 版本，比如 8 或 9
+
+      # 【修改步骤】设置 Node 并开启 pnpm 缓存
+      - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'pnpm'
+          cache: 'pnpm' # 注意：这里从 npm 改成了 pnpm
 
-      - name: 📦 Install Dependencies (安装依赖)
-        run: pnpm install
+      # 【修改命令】使用 pnpm 安装依赖
+      - name: 📦 Install Dependencies
+        run: pnpm install --frozen-lockfile
 
-      - name: 🎨 Check Formatting (检查代码美观度)
-        # 使用 Prettier 检查，如果不符合规范直接报错
-        # 提示：如果这里报错，请在本地运行 npm run format
-        run: npx prettier --check "src/**/*.ts"
+      - name: 🎨 Check Formatting
+        # 确保你有 pnpm run format 命令
+        run: pnpm prettier --check "src/**/*.ts"
         continue-on-error: false
 
-      - name: 🧹 Lint Check (代码规范检查)
-        # 检查是否有多余的变量、不规范的写法
+      - name: 🧹 Lint Check
         run: pnpm run lint
 
-      - name: 🛠️ Type Check & Build (TS类型检查与构建)
-        # 这是最关键的一步，NestJS 编译失败将无法部署
+      - name: 🛠️ Type Check & Build
         run: pnpm run build
 
-  # ========================================================
-  # 任务二：深度安全扫描 (Deep Security Scan)
-  # ========================================================
   security-audit:
     name: 👮 Security Audit (安全审计)
     runs-on: ubuntu-latest
-    needs: code-quality # 只有代码质量检查通过后才跑安全扫描，省资源
+    needs: code-quality
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # 全量拉取，为了扫描历史记录中的密钥
+          fetch-depth: 0
 
-      # 1. 密钥泄露扫描 (Gitleaks)
-      - name: 🔑 Secret Scan (密钥泄露扫描)
+      - name: 🔑 Secret Scan
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 2. 依赖包漏洞扫描 (NPM Audit)
-      - name: 🦠 Dependency Vulnerabilities (依赖漏洞扫描)
-        # 扫描 package-lock.json，如果有高危(high)以上漏洞则报错
+      # 【注意】npm audit 在 pnpm 中对应的是 pnpm audit
+      - name: 🦠 Dependency Vulnerabilities
         run: pnpm audit --audit-level=high
 
-      # 3. 文件系统与配置漏洞扫描 (Trivy)
-      - name: 🛡️ Trivy Filesystem Scan (生产漏洞扫描)
+      - name: 🛡️ Trivy Filesystem Scan
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
           scan-ref: '.'
           hide-progress: false
           format: 'table'
-          exit-code: '1' # 发现严重漏洞(CRITICAL)时让 CI 失败
+          exit-code: '1'
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
 
-  # ========================================================
-  # 任务三：生成友好的报告 (Summary)
-  # ========================================================
   report-status:
-    if: always() # 无论成功失败都执行
+    if: always()
     needs: [code-quality, security-audit]
     runs-on: ubuntu-latest
-    name: 📊 Generate Report (生成报告)
+    name: 📊 Generate Report
     steps:
       - name: 📝 Summary
         run: |

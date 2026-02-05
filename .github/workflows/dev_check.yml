@@ -1,7 +1,5 @@
 name: ⚡ Dev Check (开发环境检查)
 
-# 触发规则：
-# 匹配 feat/* 或 fix/* 开头的分支推送
 on:
   push:
     branches:
@@ -22,26 +20,35 @@ jobs:
         with:
           fetch-depth: 0
 
+      # 【新增】
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      # 【修改】
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'pnpm'
 
+      # 【修改】
       - name: 📦 Install Dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
-      # 开发者在写代码时经常忘格式化，这里只警告不报错，或者你可以选择报错
       - name: 🎨 Check Formatting
+        # 确保你有 pnpm run format 命令
         run: |
-          npx prettier --check "src/**/*.ts" || echo "⚠️ Warning: Code style issues found. Please run 'npm run format'."
+          pnpm prettier --check "src/**/*.ts" || echo "⚠️ Warning: Code style issues found. Please run 'pnpm run format'."
 
-      - name: 🛠️ TS Build Check (TS编译检查)
-        # 这是必须的，确保你的改动没有破坏代码逻辑
+      - name: 🧹 Lint Check
+        run: pnpm run lint
+
+      - name: 🛠️ TS Build Check
         run: pnpm run build
 
-      - name: 🔑 Gitleaks Secret Scan (密钥泄露扫描)
-        # 这一步不能省，开发分支泄露了密码也很危险
+      - name: 🔑 Gitleaks Secret Scan
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
