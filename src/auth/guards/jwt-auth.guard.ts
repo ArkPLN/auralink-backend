@@ -17,7 +17,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     // 1. 如果有系统级错误或用户未找到
     if (err || !user) {
       // 2. 判断 info 的具体类型来定制错误信息
-      
+
       // 情况 A: Token 过期
       if (info instanceof TokenExpiredError) {
         throw new UnauthorizedException({
@@ -38,7 +38,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
       // 情况 C: 未携带 Token (info 通常是 Error: No auth token)
       if (!info) {
-         throw new UnauthorizedException({
+        throw new UnauthorizedException({
           statusCode: 401,
           message: '未提供认证令牌',
           error: 'TokenMissing',
@@ -46,11 +46,14 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       }
 
       // 其他未知鉴权错误
-      throw err || new UnauthorizedException({
+      throw (
+        err ||
+        new UnauthorizedException({
           statusCode: 401,
           message: '身份验证失败',
           error: 'Unauthorized',
-      });
+        })
+      );
     }
 
     // 验证通过，返回 user 对象，它会被自动挂载到 req.user 上

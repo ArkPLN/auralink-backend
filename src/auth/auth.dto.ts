@@ -10,10 +10,19 @@ export class RegisterDto {
   @ApiProperty({ description: '真实姓名', example: '张三', required: false })
   name?: string;
 
-  @ApiProperty({ description: '联系电话', example: '13800138000', required: false })
+  @ApiProperty({
+    description: '联系电话',
+    example: '13800138000',
+    required: false,
+  })
   phone?: string;
 
-  @ApiProperty({ description: '所属部门', example: '技术部', default: 'internMember', required: false })
+  @ApiProperty({
+    description: '所属部门',
+    example: '技术部',
+    default: 'internMember',
+    required: false,
+  })
   department?: string;
 }
 

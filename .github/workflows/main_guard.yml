@@ -1,0 +1,108 @@
+name: 🛡️ Main Guard (生产环境保镖)
+
+# 触发规则：
+# 1. 只有当代码合并进 main (push)
+# 2. 或者针对 main 发起的 Pull Request 时触发
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  # ========================================================
+  # 任务一：代码质量与构建检查 (Quality & Build)
+  # ========================================================
+  code-quality:
+    name: 🏗️ Quality & Build (质量与构建)
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Code (拉取代码)
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js (设置 Node 环境)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies (安装依赖)
+        run: npm ci
+
+      - name: 🎨 Check Formatting (检查代码美观度)
+        # 使用 Prettier 检查，如果不符合规范直接报错
+        # 提示：如果这里报错，请在本地运行 npm run format
+        run: npx prettier --check "src/**/*.ts"
+        continue-on-error: false
+
+      - name: 🧹 Lint Check (代码规范检查)
+        # 检查是否有多余的变量、不规范的写法
+        run: npm run lint
+
+      - name: 🛠️ Type Check & Build (TS类型检查与构建)
+        # 这是最关键的一步，NestJS 编译失败将无法部署
+        run: npm run build
+
+  # ========================================================
+  # 任务二：深度安全扫描 (Deep Security Scan)
+  # ========================================================
+  security-audit:
+    name: 👮 Security Audit (安全审计)
+    runs-on: ubuntu-latest
+    needs: code-quality # 只有代码质量检查通过后才跑安全扫描，省资源
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 全量拉取，为了扫描历史记录中的密钥
+
+      # 1. 密钥泄露扫描 (Gitleaks)
+      - name: 🔑 Secret Scan (密钥泄露扫描)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 2. 依赖包漏洞扫描 (NPM Audit)
+      - name: 🦠 Dependency Vulnerabilities (依赖漏洞扫描)
+        # 扫描 package-lock.json，如果有高危(high)以上漏洞则报错
+        run: npm audit --audit-level=high
+
+      # 3. 文件系统与配置漏洞扫描 (Trivy)
+      - name: 🛡️ Trivy Filesystem Scan (生产漏洞扫描)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          hide-progress: false
+          format: 'table'
+          exit-code: '1' # 发现严重漏洞(CRITICAL)时让 CI 失败
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+  # ========================================================
+  # 任务三：生成友好的报告 (Summary)
+  # ========================================================
+  report-status:
+    if: always() # 无论成功失败都执行
+    needs: [code-quality, security-audit]
+    runs-on: ubuntu-latest
+    name: 📊 Generate Report (生成报告)
+    steps:
+      - name: 📝 Summary
+        run: |
+          echo "## 🚀 AuraLink CI Report (Main Branch)" >> $GITHUB_STEP_SUMMARY
+          echo "| Check Name (检查项) | Status (状态) | Note (说明) |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.code-quality.result }}" == "success" ]; then
+            echo "| 🏗️ Code Quality | ✅ Passed | TS编译与格式化通过 |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🏗️ Code Quality | ❌ Failed | 请检查 TS 类型错误或 Prettier 格式 |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.security-audit.result }}" == "success" ]; then
+            echo "| 👮 Security Audit | ✅ Passed | 未发现高危漏洞或密钥泄露 |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 👮 Security Audit | ❌ Failed | ⚠️ 发现安全隐患！请查看 Security Audit 详情 |" >> $GITHUB_STEP_SUMMARY
+          fi

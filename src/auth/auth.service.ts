@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  UnauthorizedException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -13,10 +18,10 @@ export class AuthService {
 
   // 1. 生成双 Token (Payload 中加入 role)
   async getTokens(userId: number, schoolId: string, role: string) {
-    const payload = { 
-      sub: userId, 
-      schoolId: schoolId, 
-      role: role // 把角色放入 Token，前端解析后可以直接判断权限
+    const payload = {
+      sub: userId,
+      schoolId: schoolId,
+      role: role, // 把角色放入 Token，前端解析后可以直接判断权限
     };
 
     const [accessToken, refreshToken] = await Promise.all([
@@ -36,7 +41,9 @@ export class AuthService {
   // 2. 注册逻辑
   async register(registerDto: RegisterDto) {
     // 检查学号是否已存在
-    const userExists = await this.userService.findOneBySchoolId(registerDto.schoolId);
+    const userExists = await this.userService.findOneBySchoolId(
+      registerDto.schoolId,
+    );
     if (userExists) throw new BadRequestException('该学号已被注册');
 
     // 检查学号是否为8位数字
@@ -46,7 +53,7 @@ export class AuthService {
 
     // 密码加密
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
-    
+
     // 保存用户
     const newUser = await this.userService.create({
       ...registerDto,
@@ -54,12 +61,16 @@ export class AuthService {
     });
 
     // 注册后直接颁发 Token (实现自动登录)
-    const tokens = await this.getTokens(newUser.id, newUser.schoolId, newUser.userRole);
+    const tokens = await this.getTokens(
+      newUser.id,
+      newUser.schoolId,
+      newUser.userRole,
+    );
     await this.updateRefreshToken(newUser.id, tokens.refreshToken);
-    
+
     return tokens;
   }
-  
+
   // 3. 登录逻辑
   async login(loginDto: LoginDto) {
     const user = await this.userService.findOneBySchoolId(loginDto.schoolId);
@@ -70,7 +81,7 @@ export class AuthService {
 
     const tokens = await this.getTokens(user.id, user.schoolId, user.userRole);
     await this.updateRefreshToken(user.id, tokens.refreshToken);
-    
+
     return tokens;
   }
 
@@ -86,22 +97,29 @@ export class AuthService {
     // 这里要注意：因为 user.entity.ts 里我们设置了 hashedRefreshToken select: false (可选优化)，
     // 如果上面 findOne 没查出来，可能需要显式 addSelect。
     // 如果没设置 select: false，则不需要改动。
-    
+
     // 为了保险起见，显式查一次带 token 的数据：
     const userWithToken = await this.userService['usersRepository'].findOne({
-        where: { id: userId },
-        select: ['id', 'schoolId', 'userRole', 'hashedRefreshToken'] 
+      where: { id: userId },
+      select: ['id', 'schoolId', 'userRole', 'hashedRefreshToken'],
     });
 
-    if (!userWithToken || !userWithToken.hashedRefreshToken) 
-        throw new ForbiddenException('Access Denied');
+    if (!userWithToken || !userWithToken.hashedRefreshToken)
+      throw new ForbiddenException('Access Denied');
 
-    const isMatch = await bcrypt.compare(refreshToken, userWithToken.hashedRefreshToken);
+    const isMatch = await bcrypt.compare(
+      refreshToken,
+      userWithToken.hashedRefreshToken,
+    );
     if (!isMatch) throw new ForbiddenException('Invalid Refresh Token');
 
-    const tokens = await this.getTokens(userWithToken.id, userWithToken.schoolId, userWithToken.userRole);
+    const tokens = await this.getTokens(
+      userWithToken.id,
+      userWithToken.schoolId,
+      userWithToken.userRole,
+    );
     await this.updateRefreshToken(userWithToken.id, tokens.refreshToken);
-    
+
     return tokens;
   }
 }

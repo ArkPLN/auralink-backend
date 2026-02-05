@@ -12,7 +12,7 @@ async function bootstrap() {
     .setDescription('基于 NestJS 开发的内部社团管理系统接口文档')
     .setVersion('1.0')
     // 开启 Bearer Auth (JWT 认证功能)，会在文档中显示“锁”图标
-    .addBearerAuth() 
+    .addBearerAuth()
     .build();
 
   // 2. 生成文档数据
@@ -27,7 +27,7 @@ async function bootstrap() {
         content: document, // 将生成的文档传给 Scalar
       },
       // 自定义主题，可选值: 'alternate', 'default', 'moon', 'purple', 'solarized'
-      theme: 'purple', 
+      theme: 'purple',
       // 页面标题
       pageTitle: '社团系统 API 文档',
     }),
