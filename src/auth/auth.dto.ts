@@ -1,16 +1,26 @@
-// 这里可以使用 class-validator 来增加验证（非必须，但推荐）
-// import { IsNotEmpty, IsString } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class RegisterDto {
-  schoolId: string;  // 必填
-  password: string;  // 必填
-  name?: string;     // 选填
-  phone?: string;    // 选填
-  email?: string;    // 选填
-  department?: string; // 选填
+  @ApiProperty({ description: '学校学号', example: '2023001001' })
+  schoolId: string;
+
+  @ApiProperty({ description: '登录密码', example: 'password123' })
+  password: string;
+
+  @ApiProperty({ description: '真实姓名', example: '张三', required: false })
+  name?: string;
+
+  @ApiProperty({ description: '联系电话', example: '13800138000', required: false })
+  phone?: string;
+
+  @ApiProperty({ description: '所属部门', example: '技术部', default: 'internMember', required: false })
+  department?: string;
 }
 
 export class LoginDto {
+  @ApiProperty({ description: '学校学号', example: '2023001001' })
   schoolId: string;
+
+  @ApiProperty({ description: '登录密码', example: 'password123' })
   password: string;
 }

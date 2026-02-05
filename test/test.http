@@ -1,7 +1,4 @@
-POST http://localhost:3000/auth/login
+GET  http://localhost:3000/guard
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjQsInNjaG9vbElkIjoiMjAyMzQwNDAiLCJyb2xlIjoidXNlciIsImlhdCI6MTc3MDI5OTY5MywiZXhwIjoxNzcwMzg2MDkzfQ.ZxRjI73aapv1wx7oUusT5FR46XQed0Pj1r-ruG2RHNs
 Content-Type: application/json
 
-{
-  "schoolId": "20234040",
-  "password": "12345678"
-}
