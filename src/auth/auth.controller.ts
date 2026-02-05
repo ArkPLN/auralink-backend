@@ -1,18 +1,27 @@
-// src/auth/auth.controller.ts
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request, Get } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { RegisterDto, LoginDto } from './auth.dto';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('register')
-  async register(@Body() body: any) {
-    return this.authService.register(body.email, body.password);
+  register(@Body() registerDto: RegisterDto) {
+    return this.authService.register(registerDto);
   }
 
   @Post('login')
-  async login(@Body() body: any) {
-    return this.authService.login(body.email, body.password);
+  login(@Body() loginDto: LoginDto) {
+    return this.authService.login(loginDto);
+  }
+
+  @UseGuards(AuthGuard('jwt-refresh'))
+  @Post('refresh')
+  refresh(@Request() req) {
+    const userId = req.user['sub']; // 注意：Strategy返回对象里key是sub
+    const refreshToken = req.user['refreshToken'];
+    return this.authService.refreshTokens(userId, refreshToken);
   }
 }
