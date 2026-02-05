@@ -2,6 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
+interface JwtPayload {
+  sub: number;
+  schoolId: string;
+  role: string;
+}
+
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor() {
@@ -12,9 +18,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
 
-  // Payload 是我们在 AuthService.getTokens 里签进去的数据
-  async validate(payload: any) {
-    // 返回值会自动挂载到 request.user
+  validate(payload: JwtPayload) {
     return {
       userId: payload.sub,
       schoolId: payload.schoolId,

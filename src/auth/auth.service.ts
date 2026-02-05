@@ -93,12 +93,6 @@ export class AuthService {
 
   // 5. 刷新 Token 逻辑
   async refreshTokens(userId: number, refreshToken: string) {
-    const user = await this.userService.findOneById(userId);
-    // 这里要注意：因为 user.entity.ts 里我们设置了 hashedRefreshToken select: false (可选优化)，
-    // 如果上面 findOne 没查出来，可能需要显式 addSelect。
-    // 如果没设置 select: false，则不需要改动。
-
-    // 为了保险起见，显式查一次带 token 的数据：
     const userWithToken = await this.userService['usersRepository'].findOne({
       where: { id: userId },
       select: ['id', 'schoolId', 'userRole', 'hashedRefreshToken'],

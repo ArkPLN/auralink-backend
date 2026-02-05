@@ -13,6 +13,13 @@ const getEnvNumber = (key: string, defaultValue: number): number => {
   return value ? parseInt(value, 10) : defaultValue;
 };
 
+interface DataSourceOptions {
+  host: string;
+  port: number;
+  database: string;
+  username: string;
+}
+
 const dataSource = new DataSource({
   type: 'postgres',
   host: getEnv('DB_HOST', 'localhost'),
@@ -22,10 +29,14 @@ const dataSource = new DataSource({
   database: getEnv('DB_DATABASE', 'postgres'),
 });
 
+interface DatabaseVersionResult {
+  version: string;
+}
+
 async function testConnection() {
   try {
     console.log('正在测试TypeORM数据库连接...');
-    const options: any = dataSource.options;
+    const options = dataSource.options as unknown as DataSourceOptions;
     console.log('连接参数:');
     console.log(`  - 主机: ${options.host}`);
     console.log(`  - 端口: ${options.port}`);
@@ -35,8 +46,10 @@ async function testConnection() {
     await dataSource.initialize();
     console.log('✅ 数据库连接成功！');
 
-    const databaseVersion = await dataSource.query('SELECT version()');
-    console.log('数据库版本:', databaseVersion[0].version);
+    const databaseVersion =
+      await dataSource.query<DatabaseVersionResult[]>('SELECT version()');
+    const versionInfo = databaseVersion[0];
+    console.log('数据库版本:', versionInfo.version);
 
     await dataSource.destroy();
     console.log('✅ 连接已关闭');
@@ -48,4 +61,4 @@ async function testConnection() {
   }
 }
 
-testConnection();
+void testConnection();

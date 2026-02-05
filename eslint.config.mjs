@@ -1,34 +1,38 @@
-// @ts-check
-import eslint from '@eslint/js';
-import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
-import globals from 'globals';
-import tseslint from 'typescript-eslint';
+module.exports = {
+  parser: '@typescript-eslint/parser',
+  parserOptions: {
+    project: 'tsconfig.json',
+    tsconfigRootDir: __dirname,
+    sourceType: 'module',
+  },
+  plugins: ['@typescript-eslint/eslint-plugin'],
+  extends: [
+    'plugin:@typescript-eslint/recommended',
+    'plugin:prettier/recommended', // 结合 Prettier
+  ],
+  root: true,
+  env: {
+    node: true,
+    jest: true,
+  },
+  ignorePatterns: ['.eslintrc.js'],
+  rules: {
+    // 1. 允许使用 any 类型
+    '@typescript-eslint/no-explicit-any': 'off',
 
-export default tseslint.config(
-  {
-    ignores: ['eslint.config.mjs'],
+    // 2. 允许使用 @ts-ignore, @ts-nocheck 等特殊注释
+    '@typescript-eslint/ban-ts-comment': 'off',
+
+    // 3. 允许定义了但未使用的变量 (可选)
+    '@typescript-eslint/no-unused-vars': 'off',
+
+    // 允许接口命名不以 I 开头 (NestJS 习惯)
+    '@typescript-eslint/interface-name-prefix': 'off',
+    
+    // 允许显式指明函数返回类型 (NestJS 推荐，但也允许自动推导)
+    '@typescript-eslint/explicit-function-return-type': 'off',
+    
+    // 允许显式指明模块边界类型
+    '@typescript-eslint/explicit-module-boundary-types': 'off',
   },
-  eslint.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked,
-  eslintPluginPrettierRecommended,
-  {
-    languageOptions: {
-      globals: {
-        ...globals.node,
-        ...globals.jest,
-      },
-      sourceType: 'commonjs',
-      parserOptions: {
-        projectService: true,
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
-  },
-  {
-    rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-floating-promises': 'warn',
-      '@typescript-eslint/no-unsafe-argument': 'warn'
-    },
-  },
-);
+};

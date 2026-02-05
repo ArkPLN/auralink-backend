@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Post,
-  Body,
-  UseGuards,
-  Request,
-  Get,
-} from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto } from './auth.dto';
 import { AuthGuard } from '@nestjs/passport';
@@ -34,9 +27,9 @@ export class AuthController {
   @ApiResponse({ status: 200, description: '刷新成功，返回新的 JWT 令牌' })
   @UseGuards(AuthGuard('jwt-refresh'))
   @Post('refresh')
-  refresh(@Request() req) {
-    const userId = req.user['sub']; // 注意：Strategy返回对象里key是sub
-    const refreshToken = req.user['refreshToken'];
+  refresh(@Request() req: { user: { sub: number; refreshToken: string } }) {
+    const userId = req.user.sub;
+    const refreshToken = req.user.refreshToken;
     return this.authService.refreshTokens(userId, refreshToken);
   }
 }

@@ -1,24 +1,17 @@
-import {
-  ExecutionContext,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 
+interface JwtUser {
+  sub: number;
+  schoolId: string;
+  role: string;
+}
+
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
-  /**
-   * @param err 内部错误
-   * @param user 验证成功后的用户对象 (如果成功)
-   * @param info 验证失败时的具体错误信息 (Error 对象)
-   */
-  handleRequest(err: any, user: any, info: any, context: ExecutionContext) {
-    // 1. 如果有系统级错误或用户未找到
+  handleRequest<TUser = JwtUser>(err: any, user: any, info: any, context: any, status?: any): TUser {
     if (err || !user) {
-      // 2. 判断 info 的具体类型来定制错误信息
-
-      // 情况 A: Token 过期
       if (info instanceof TokenExpiredError) {
         throw new UnauthorizedException({
           statusCode: 401,
@@ -27,7 +20,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         });
       }
 
-      // 情况 B: Token 无效 (格式错误、被篡改、密钥不匹配)
       if (info instanceof JsonWebTokenError) {
         throw new UnauthorizedException({
           statusCode: 401,
@@ -36,7 +28,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         });
       }
 
-      // 情况 C: 未携带 Token (info 通常是 Error: No auth token)
       if (!info) {
         throw new UnauthorizedException({
           statusCode: 401,
@@ -45,7 +36,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         });
       }
 
-      // 其他未知鉴权错误
       throw (
         err ||
         new UnauthorizedException({
@@ -56,7 +46,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       );
     }
 
-    // 验证通过，返回 user 对象，它会被自动挂载到 req.user 上
     return user;
   }
 }
