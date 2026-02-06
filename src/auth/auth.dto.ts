@@ -90,3 +90,38 @@ export class RefreshResponseDto {
   })
   refreshToken: string;
 }
+
+export class ChangePasswordDto {
+  @ApiProperty({
+    description: '旧密码',
+    example: 'oldPassword123',
+  })
+  oldPassword: string;
+
+  @ApiProperty({
+    description: '新密码，长度至少8位，必须包含字母和数字',
+    example: 'newPassword456',
+    minLength: 8,
+  })
+  newPassword: string;
+
+  @ApiProperty({
+    description: '确认新密码，必须与新密码一致',
+    example: 'newPassword456',
+  })
+  confirmPassword: string;
+}
+
+export class ChangePasswordResponseDto {
+  @ApiProperty({
+    description: '密码修改结果消息',
+    example: '密码修改成功',
+  })
+  message: string;
+
+  @ApiProperty({
+    description: '操作是否成功',
+    example: true,
+  })
+  success: boolean;
+}

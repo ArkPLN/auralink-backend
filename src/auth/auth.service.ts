@@ -13,6 +13,8 @@ import {
   RegisterResponseDto,
   LoginResponseDto,
   RefreshResponseDto,
+  ChangePasswordDto,
+  ChangePasswordResponseDto,
 } from './auth.dto';
 import { User } from 'src/user/entities/user.entity';
 
@@ -175,5 +177,72 @@ export class AuthService {
       }
       throw error;
     }
+  }
+
+  async changePassword(
+    userId: number,
+    changePasswordDto: ChangePasswordDto,
+  ): Promise<ChangePasswordResponseDto> {
+    const { oldPassword, newPassword, confirmPassword } = changePasswordDto;
+
+    if (newPassword !== confirmPassword) {
+      throw new BadRequestException({
+        statusCode: 400,
+        message: '新密码与确认密码不一致',
+        error: 'BadRequest',
+      });
+    }
+
+    if (oldPassword === newPassword) {
+      throw new BadRequestException({
+        statusCode: 400,
+        message: '新密码不能与旧密码相同',
+        error: 'BadRequest',
+      });
+    }
+
+    if (newPassword.length < 8) {
+      throw new BadRequestException({
+        statusCode: 400,
+        message: '新密码长度至少为8位',
+        error: 'BadRequest',
+      });
+    }
+
+    const hasLetter = /[a-zA-Z]/.test(newPassword);
+    const hasNumber = /\d/.test(newPassword);
+    if (!hasLetter || !hasNumber) {
+      throw new BadRequestException({
+        statusCode: 400,
+        message: '新密码必须同时包含字母和数字',
+        error: 'BadRequest',
+      });
+    }
+
+    const user = await this.userService.findOneById(userId);
+    if (!user) {
+      throw new UnauthorizedException({
+        statusCode: 401,
+        message: '用户不存在',
+        error: 'Unauthorized',
+      });
+    }
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      throw new UnauthorizedException({
+        statusCode: 401,
+        message: '旧密码错误',
+        error: 'Unauthorized',
+      });
+    }
+
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    await this.userService.update(userId, { password: hashedNewPassword });
+
+    return {
+      message: '密码修改成功',
+      success: true,
+    };
   }
 }
