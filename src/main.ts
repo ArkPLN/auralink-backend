@@ -6,6 +6,8 @@ import { apiReference } from '@scalar/nestjs-api-reference';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  app.setGlobalPrefix('api');
+
   const config = new DocumentBuilder()
     .setTitle('社团管理系统 API')
     .setDescription('基于 NestJS 开发的内部社团管理系统接口文档')
@@ -28,6 +30,8 @@ async function bootstrap() {
 
   await app.listen(process.env.PORT || 3000);
   console.log(`应用已启动，监听端口 ${process.env.PORT || 3000}`);
-  console.log(`API 文档地址: http://localhost:${process.env.PORT || 3000}/reference`);
+  console.log(
+    `API 文档地址: http://localhost:${process.env.PORT || 3000}/reference`,
+  );
 }
 void bootstrap();

@@ -6,17 +6,18 @@ interface JwtPayload {
   sub: number;
   schoolId: string;
   role: string;
-  userRole: string;
-  isActive: boolean;
 }
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
+export class JwtRefreshStrategy extends PassportStrategy(
+  Strategy,
+  'jwt-refresh',
+) {
   constructor() {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: 'ACCESS_TOKEN_SECRET',
+      secretOrKey: 'REFRESH_TOKEN_SECRET',
     });
   }
 
@@ -25,8 +26,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       sub: payload.sub,
       schoolId: payload.schoolId,
       role: payload.role,
-      userRole: payload.userRole,
-      isActive: payload.isActive,
     };
   }
 }

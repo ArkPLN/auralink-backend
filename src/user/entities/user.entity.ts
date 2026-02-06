@@ -1,41 +1,102 @@
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { ApiProperty } from '@nestjs/swagger';
 
-@Entity('users') // 映射到数据库中的 users 表
+@Entity('users')
 export class User {
-  // 主键，自增
+  @ApiProperty({
+    description: '用户唯一标识ID',
+    example: 1,
+  })
   @PrimaryGeneratedColumn()
   id: number;
-  // 学校账号，唯一
-  @Column({ unique: true, nullable: false }) // 学校账号不能为空，必须唯一
+
+  @ApiProperty({
+    description: '学校学号，用于登录',
+    example: '2023001001',
+    uniqueItems: true,
+  })
+  @Column({ unique: true, nullable: false })
   schoolId: string;
-  // 密码
+
+  @ApiProperty({
+    description: '用户密码（已加密的哈希值）',
+    example: '$2b$10$...',
+    writeOnly: true,
+  })
   @Column()
-  password: string; // 存储的是加密后的哈希值
-  // 姓名
-  @Column({ nullable: true }) // 姓名可以为空
+  password: string;
+
+  @ApiProperty({
+    description: '用户真实姓名',
+    example: '张三',
+    required: false,
+  })
+  @Column({ nullable: true })
   name: string;
-  // 手机号
-  @Column({ nullable: true }) // 手机号可以为空
+
+  @ApiProperty({
+    description: '用户手机号',
+    example: '13800138000',
+    required: false,
+  })
+  @Column({ nullable: true })
   phone: string;
-  // 邮箱
-  @Column({ unique: true, nullable: true }) // 邮箱可以为空，必须唯一
+
+  @ApiProperty({
+    description: '用户邮箱地址',
+    example: 'user@example.com',
+    required: false,
+    uniqueItems: true,
+  })
+  @Column({ unique: true, nullable: true })
   email: string;
-  // 部门
+
+  @ApiProperty({
+    description: '用户所属部门',
+    example: '技术部',
+    enum: ['internMember', 'member', 'admin'],
+    default: 'internMember',
+  })
   @Column({ default: 'internMember' })
   department: string;
-  // 是否激活
+
+  @ApiProperty({
+    description: '用户是否处于激活状态',
+    example: true,
+    default: true,
+  })
   @Column({ default: true })
   isActive: boolean;
-  // 用户角色
+
+  @ApiProperty({
+    description: '用户角色权限',
+    example: 'user',
+    enum: ['user', 'admin'],
+    default: 'user',
+  })
   @Column({ default: 'user' })
   userRole: string;
-  // 刷新令牌的哈希值
+
+  @ApiProperty({
+    description: '刷新令牌的哈希值',
+    example: '$2b$10$...',
+    required: false,
+    writeOnly: true,
+  })
   @Column({ nullable: true })
   hashedRefreshToken?: string;
-  //创建时间
+
+  @ApiProperty({
+    description: '用户创建时间',
+    example: '2024-01-01T00:00:00.000Z',
+  })
   @Column({ default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
-  // 更新时间
+
+  @ApiProperty({
+    description: '用户最后更新时间',
+    example: '2024-01-01T00:00:00.000Z',
+  })
   @Column({ default: () => 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
 }

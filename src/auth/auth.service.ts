@@ -7,7 +7,14 @@ import {
 import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { RegisterDto, LoginDto } from './auth.dto';
+import {
+  RegisterDto,
+  LoginDto,
+  RegisterResponseDto,
+  LoginResponseDto,
+  RefreshResponseDto,
+} from './auth.dto';
+import { User } from 'src/user/entities/user.entity';
 
 @Injectable()
 export class AuthService {
@@ -16,21 +23,27 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  // 1. 生成双 Token (Payload 中加入 role)
-  async getTokens(userId: number, schoolId: string, role: string) {
+  async getTokens(
+    userId: number,
+    schoolId: string,
+    userRole: string,
+    isActive: boolean,
+  ) {
     const payload = {
       sub: userId,
       schoolId: schoolId,
-      role: role, // 把角色放入 Token，前端解析后可以直接判断权限
+      role: userRole,
+      userRole: userRole,
+      isActive: isActive,
     };
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
-        secret: 'ACCESS_TOKEN_SECRET', // 记得放入 .env
+        secret: 'ACCESS_TOKEN_SECRET',
         expiresIn: '1d',
       }),
       this.jwtService.signAsync(payload, {
-        secret: 'REFRESH_TOKEN_SECRET', // 记得放入 .env
+        secret: 'REFRESH_TOKEN_SECRET',
         expiresIn: '14d',
       }),
     ]);
@@ -38,82 +51,129 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  // 2. 注册逻辑
-  async register(registerDto: RegisterDto) {
-    // 检查学号是否已存在
+  async register(registerDto: RegisterDto): Promise<RegisterResponseDto> {
     const userExists = await this.userService.findOneBySchoolId(
       registerDto.schoolId,
     );
     if (userExists) throw new BadRequestException('该学号已被注册');
 
-    // 检查学号是否为8位数字
     if (!/^\d{8}$/.test(registerDto.schoolId)) {
       throw new BadRequestException('学号必须为8位数字');
     }
 
-    // 密码加密
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
-    // 保存用户
     const newUser = await this.userService.create({
       ...registerDto,
       password: hashedPassword,
     });
 
-    // 注册后直接颁发 Token (实现自动登录)
     const tokens = await this.getTokens(
       newUser.id,
       newUser.schoolId,
       newUser.userRole,
+      newUser.isActive,
     );
     await this.updateRefreshToken(newUser.id, tokens.refreshToken);
 
-    return tokens;
+    const user = (await this.userService.findOneBySchoolId(
+      newUser.schoolId,
+    )) as User;
+
+    const registerResponse = new RegisterResponseDto();
+    registerResponse.id = user.id;
+    registerResponse.schoolId = user.schoolId;
+    registerResponse.userRole = user.userRole;
+    registerResponse.accessToken = tokens.accessToken;
+    registerResponse.refreshToken = tokens.refreshToken;
+
+    return registerResponse;
   }
 
-  // 3. 登录逻辑
-  async login(loginDto: LoginDto) {
+  async login(loginDto: LoginDto): Promise<LoginResponseDto> {
     const user = await this.userService.findOneBySchoolId(loginDto.schoolId);
     if (!user) throw new UnauthorizedException('学号或密码错误');
 
     const isMatch = await bcrypt.compare(loginDto.password, user.password);
     if (!isMatch) throw new UnauthorizedException('学号或密码错误');
 
-    const tokens = await this.getTokens(user.id, user.schoolId, user.userRole);
+    const tokens = await this.getTokens(
+      user.id,
+      user.schoolId,
+      user.userRole,
+      user.isActive,
+    );
     await this.updateRefreshToken(user.id, tokens.refreshToken);
 
-    return tokens;
+    const loginResponse = new LoginResponseDto();
+    loginResponse.id = user.id;
+    loginResponse.schoolId = user.schoolId;
+    loginResponse.userRole = user.userRole;
+    loginResponse.accessToken = tokens.accessToken;
+    loginResponse.refreshToken = tokens.refreshToken;
+
+    return loginResponse;
   }
 
-  // 4. 更新 RefreshToken 哈希
   async updateRefreshToken(userId: number, refreshToken: string) {
     const hashedToken = await bcrypt.hash(refreshToken, 10);
     await this.userService.update(userId, { hashedRefreshToken: hashedToken });
   }
 
-  // 5. 刷新 Token 逻辑
-  async refreshTokens(userId: number, refreshToken: string) {
-    const userWithToken = await this.userService['usersRepository'].findOne({
-      where: { id: userId },
-      select: ['id', 'schoolId', 'userRole', 'hashedRefreshToken'],
-    });
+  async refreshTokens(refreshToken: string): Promise<RefreshResponseDto> {
+    try {
+      const payload = await this.jwtService.verifyAsync(refreshToken, {
+        secret: 'REFRESH_TOKEN_SECRET',
+      });
 
-    if (!userWithToken || !userWithToken.hashedRefreshToken)
-      throw new ForbiddenException('Access Denied');
+      const userId = payload.sub;
 
-    const isMatch = await bcrypt.compare(
-      refreshToken,
-      userWithToken.hashedRefreshToken,
-    );
-    if (!isMatch) throw new ForbiddenException('Invalid Refresh Token');
+      const userWithToken = await this.userService['usersRepository'].findOne({
+        where: { id: userId },
+        select: [
+          'id',
+          'schoolId',
+          'userRole',
+          'hashedRefreshToken',
+          'isActive',
+        ],
+      });
 
-    const tokens = await this.getTokens(
-      userWithToken.id,
-      userWithToken.schoolId,
-      userWithToken.userRole,
-    );
-    await this.updateRefreshToken(userWithToken.id, tokens.refreshToken);
+      if (!userWithToken || !userWithToken.hashedRefreshToken) {
+        throw new ForbiddenException('Access Denied');
+      }
 
-    return tokens;
+      if (!userWithToken.isActive) {
+        throw new ForbiddenException('用户已被禁用');
+      }
+
+      const isMatch = await bcrypt.compare(
+        refreshToken,
+        userWithToken.hashedRefreshToken,
+      );
+      if (!isMatch) throw new ForbiddenException('Invalid Refresh Token');
+
+      const tokens = await this.getTokens(
+        userWithToken.id,
+        userWithToken.schoolId,
+        userWithToken.userRole,
+        userWithToken.isActive,
+      );
+      await this.updateRefreshToken(userWithToken.id, tokens.refreshToken);
+
+      const refreshResponse = new RefreshResponseDto();
+      refreshResponse.accessToken = tokens.accessToken;
+      refreshResponse.refreshToken = tokens.refreshToken;
+
+      return refreshResponse;
+    } catch (error) {
+      if (error.name === 'JsonWebTokenError') {
+        throw new UnauthorizedException('无效的刷新令牌');
+      }
+      if (error.name === 'TokenExpiredError') {
+        throw new UnauthorizedException('刷新令牌已过期，请重新登录');
+      }
+      throw error;
+    }
   }
 }
