@@ -20,8 +20,8 @@ import {
   ApiTags,
   ApiQuery,
   ApiBody,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
-import { User } from './entities/user.entity';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import {
   FindUsersQueryDto,
@@ -39,6 +39,7 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: '获取当前用户信息' })
   @ApiResponse({
     status: 200,
@@ -61,6 +62,7 @@ export class UserController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({
     summary: '获取用户列表',
     description:
@@ -139,6 +141,7 @@ export class UserController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: '更新用户信息' })
   @ApiResponse({
     status: 200,
