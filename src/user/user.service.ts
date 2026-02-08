@@ -7,7 +7,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { RegisterDto } from '../auth/auth.dto';
-import { UserInfoDto } from './dto/find-users.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
@@ -36,8 +35,8 @@ export class UserService {
     await this.usersRepository.update(id, updateData);
   }
 
-  async findActiveUsers(limit: number = 10): Promise<UserInfoDto[]> {
-    const users = await this.usersRepository.find({
+  async findActiveUsers(limit: number = 10): Promise<User[]> {
+    return this.usersRepository.find({
       where: {
         isActive: true,
       },
@@ -46,22 +45,10 @@ export class UserService {
       },
       take: limit,
     });
-
-    return users.map((user) => ({
-      id: user.id,
-      schoolId: user.schoolId,
-      name: user.name,
-      phone: user.phone,
-      email: user.email,
-      department: user.department,
-      isActive: user.isActive,
-      userRole: user.userRole,
-      createdAt: user.createdAt,
-    }));
   }
 
-  async findActiveAdminUsers(limit: number = 10): Promise<UserInfoDto[]> {
-    const users = await this.usersRepository.find({
+  async findActiveAdminUsers(limit: number = 10): Promise<User[]> {
+    return this.usersRepository.find({
       where: {
         isActive: true,
         userRole: 'admin',
@@ -71,25 +58,13 @@ export class UserService {
       },
       take: limit,
     });
-
-    return users.map((user) => ({
-      id: user.id,
-      schoolId: user.schoolId,
-      name: user.name,
-      phone: user.phone,
-      email: user.email,
-      department: user.department,
-      isActive: user.isActive,
-      userRole: user.userRole,
-      createdAt: user.createdAt,
-    }));
   }
 
   async updateUser(
     userId: number,
     updateUserDto: UpdateUserDto,
     currentUserId: number,
-  ): Promise<UserInfoDto> {
+  ): Promise<User> {
     const user = await this.usersRepository.findOne({ where: { id: userId } });
 
     if (!user) {
@@ -111,18 +86,6 @@ export class UserService {
     Object.assign(user, updateUserDto);
     user.updatedAt = new Date();
 
-    const updatedUser = await this.usersRepository.save(user);
-
-    return {
-      id: updatedUser.id,
-      schoolId: updatedUser.schoolId,
-      name: updatedUser.name,
-      phone: updatedUser.phone,
-      email: updatedUser.email,
-      department: updatedUser.department,
-      isActive: updatedUser.isActive,
-      userRole: updatedUser.userRole,
-      createdAt: updatedUser.createdAt,
-    };
+    return this.usersRepository.save(user);
   }
 }

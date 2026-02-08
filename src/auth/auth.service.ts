@@ -89,20 +89,20 @@ export class AuthService {
     );
     await this.updateRefreshToken(newUser.id, tokens.refreshToken);
 
-    const user = (await this.userService.findOneBySchoolId(
-      newUser.schoolId,
-    )) as User;
-
-    const registerResponse = new RegisterResponseDto();
-    registerResponse.id = user.id;
-    registerResponse.schoolId = user.schoolId;
-    registerResponse.userRole = user.userRole;
-    registerResponse.accessToken = tokens.accessToken;
-    registerResponse.refreshToken = tokens.refreshToken;
-
-    return registerResponse;
+    // 使用对象展开构造响应，更简洁
+    return {
+      ...tokens,
+      id: newUser.id,
+      schoolId: newUser.schoolId,
+      userRole: newUser.userRole,
+    };
   }
 
+  /**
+   * 用户登录
+   * @param loginDto 登录数据传输对象
+   * @returns 登录响应数据传输对象
+   */
   async login(loginDto: LoginDto): Promise<LoginResponseDto> {
     const user = await this.userService.findOneBySchoolId(loginDto.schoolId);
     if (!user) throw new UnauthorizedException('学号或密码错误');
@@ -118,14 +118,13 @@ export class AuthService {
     );
     await this.updateRefreshToken(user.id, tokens.refreshToken);
 
-    const loginResponse = new LoginResponseDto();
-    loginResponse.id = user.id;
-    loginResponse.schoolId = user.schoolId;
-    loginResponse.userRole = user.userRole;
-    loginResponse.accessToken = tokens.accessToken;
-    loginResponse.refreshToken = tokens.refreshToken;
-
-    return loginResponse;
+    // 使用对象展开构造响应
+    return {
+      ...tokens,
+      id: user.id,
+      schoolId: user.schoolId,
+      userRole: user.userRole,
+    };
   }
 
   async updateRefreshToken(userId: number, refreshToken: string) {
@@ -174,11 +173,8 @@ export class AuthService {
       );
       await this.updateRefreshToken(userWithToken.id, tokens.refreshToken);
 
-      const refreshResponse = new RefreshResponseDto();
-      refreshResponse.accessToken = tokens.accessToken;
-      refreshResponse.refreshToken = tokens.refreshToken;
-
-      return refreshResponse;
+      // 直接返回 tokens，符合 RefreshResponseDto 结构
+      return tokens;
     } catch (error) {
       if (error.name === 'JsonWebTokenError') {
         throw new UnauthorizedException('无效的刷新令牌');

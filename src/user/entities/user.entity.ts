@@ -1,5 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
+import { Exclude } from 'class-transformer';
 
 @Entity('users')
 export class User {
@@ -23,6 +24,7 @@ export class User {
     example: '$2b$10$...',
     writeOnly: true,
   })
+  @Exclude()
   @Column()
   password: string;
 
@@ -83,6 +85,7 @@ export class User {
     required: false,
     writeOnly: true,
   })
+  @Exclude()
   @Column({ nullable: true })
   hashedRefreshToken?: string;
 

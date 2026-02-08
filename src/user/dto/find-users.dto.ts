@@ -4,12 +4,12 @@ import {
   IsInt,
   Min,
   Max,
-  IsBoolean,
   IsNumber,
   IsString,
   IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PublicUserDto } from './user-response.dto';
 
 export class FindUsersQueryDto {
   @ApiProperty({
@@ -49,49 +49,12 @@ export class FindUsersBodyDto {
 }
 
 export class FindUsersResponseDto {
-  @ApiProperty({ description: '用户列表', type: [Object] })
-  users: UserInfoDto[];
+  @ApiProperty({ description: '用户列表', type: [PublicUserDto] })
+  users: PublicUserDto[];
 
   @ApiProperty({ description: '查询到的用户数量', example: 5 })
   count: number;
 
   @ApiProperty({ description: '请求的数量限制', example: 10 })
   limit: number;
-}
-
-export class UserInfoDto {
-  @ApiProperty({ description: '用户ID', example: 1 })
-  id: number;
-
-  @ApiProperty({ description: '学校学号', example: '2023001001' })
-  schoolId: string;
-
-  @ApiProperty({ description: '姓名', example: '张三', required: false })
-  name?: string;
-
-  @ApiProperty({
-    description: '手机号',
-    example: '13800138000',
-    required: false,
-  })
-  phone?: string;
-
-  @ApiProperty({
-    description: '邮箱',
-    example: 'user@example.com',
-    required: false,
-  })
-  email?: string;
-
-  @ApiProperty({ description: '部门', example: '技术部' })
-  department: string;
-
-  @ApiProperty({ description: '是否激活', example: true })
-  isActive: boolean;
-
-  @ApiProperty({ description: '用户角色', example: 'admin' })
-  userRole: string;
-
-  @ApiProperty({ description: '创建时间', example: '2024-01-01T00:00:00.000Z' })
-  createdAt: Date;
 }

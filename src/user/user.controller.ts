@@ -9,7 +9,10 @@ import {
   Query,
   ForbiddenException,
   Body,
+  UseInterceptors,
+  ClassSerializerInterceptor,
 } from '@nestjs/common';
+import { plainToInstance } from 'class-transformer';
 import { UserService } from './user.service';
 import {
   ApiOperation,
@@ -26,17 +29,12 @@ import {
   FindUsersResponseDto,
 } from './dto/find-users.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-
-interface JwtUser {
-  sub: number;
-  schoolId: string;
-  role: string;
-  userRole: string;
-  isActive: boolean;
-}
+import { JwtPayload } from 'src/auth/strategies/jwt';
+import { MeResponseDto, PublicUserDto } from './dto/user-response.dto';
 
 @ApiTags('用户模块')
 @Controller('user')
+@UseInterceptors(ClassSerializerInterceptor)
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
@@ -45,17 +43,21 @@ export class UserController {
   @ApiResponse({
     status: 200,
     description: '返回用户信息，不包含密码',
-    type: User,
+    type: MeResponseDto,
   })
   @Get('me')
-  async getMe(@Req() req: Request): Promise<User> {
-    const user = req['user'] as User;
-    const userInfo = (await this.userService.findOneBySchoolId(
-      user.schoolId,
-    )) as User;
-    userInfo.password = '';
-    if (!userInfo) throw new UnauthorizedException('用户不存在');
-    return userInfo;
+  async getMe(@Req() req: Request): Promise<MeResponseDto> {
+    const userPayload = req['user'] as JwtPayload;
+    const user = await this.userService.findOneBySchoolId(userPayload.schoolId);
+
+    if (!user) {
+      throw new UnauthorizedException('用户不存在');
+    }
+
+    // 使用 plainToInstance 转换为 DTO，自动剔除多余字段
+    return plainToInstance(MeResponseDto, user, {
+      excludeExtraneousValues: true,
+    });
   }
 
   @UseGuards(JwtAuthGuard)
@@ -97,7 +99,7 @@ export class UserController {
     @Query() query: FindUsersQueryDto,
     @Body() bodyDto: FindUsersBodyDto,
   ): Promise<FindUsersResponseDto> {
-    const currentUser = req['user'] as JwtUser;
+    const currentUser = req['user'] as JwtPayload;
 
     if (currentUser.userRole !== 'admin' || !currentUser.isActive) {
       throw new ForbiddenException({
@@ -121,9 +123,14 @@ export class UserController {
     const limit = query.n ?? 10;
     const users = await this.userService.findActiveUsers(limit);
 
+    // 转换为 PublicUserDto，只保留公开字段
+    const publicUsers = plainToInstance(PublicUserDto, users, {
+      excludeExtraneousValues: true,
+    });
+
     return {
-      users,
-      count: users.length,
+      users: publicUsers,
+      count: publicUsers.length,
       limit,
     };
   }
@@ -133,7 +140,7 @@ export class UserController {
   @ApiResponse({
     status: 200,
     description: '用户信息更新成功，返回更新后的用户信息',
-    type: UpdateUserDto,
+    type: MeResponseDto,
   })
   @ApiResponse({
     status: 403,
@@ -151,10 +158,19 @@ export class UserController {
   async updateUser(
     @Req() req: Request,
     @Body() updateUserDto: UpdateUserDto,
-  ): Promise<any> {
-    const currentUser = req['user'] as JwtUser;
+  ): Promise<MeResponseDto> {
+    const currentUser = req['user'] as JwtPayload;
     const userId = currentUser.sub;
 
-    return this.userService.updateUser(userId, updateUserDto, userId);
+    const updatedUser = await this.userService.updateUser(
+      userId,
+      updateUserDto,
+      userId,
+    );
+
+    // 转换为 MeResponseDto
+    return plainToInstance(MeResponseDto, updatedUser, {
+      excludeExtraneousValues: true,
+    });
   }
 }
