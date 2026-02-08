@@ -133,6 +133,7 @@ export class UserController {
 
     // 转换为 PublicUserDto，只保留公开字段
     const publicUsers = plainToInstance(PublicUserDto, users, {
+      // 只转换公开字段，排除 password 等敏感信息
       excludeExtraneousValues: true,
     });
 
