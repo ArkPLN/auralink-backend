@@ -1,12 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { JwtPayload } from './jwt.d';
 
-interface JwtPayload {
-  sub: number;
-  schoolId: string;
-  role: string;
-}
+
 
 @Injectable()
 export class JwtRefreshStrategy extends PassportStrategy(
@@ -26,6 +23,8 @@ export class JwtRefreshStrategy extends PassportStrategy(
       sub: payload.sub,
       schoolId: payload.schoolId,
       role: payload.role,
+      userRole: payload.role,
+      isActive: true,
     };
   }
 }

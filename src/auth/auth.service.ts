@@ -24,7 +24,14 @@ export class AuthService {
     private userService: UserService,
     private jwtService: JwtService,
   ) {}
-
+  /**
+   * 获取用户令牌
+   * @param userId 用户ID
+   * @param schoolId 学校ID
+   * @param userRole 用户角色
+   * @param isActive 用户是否激活
+   * @returns 包含访问令牌和刷新令牌的对象
+   */
   async getTokens(
     userId: number,
     schoolId: string,
@@ -52,7 +59,11 @@ export class AuthService {
 
     return { accessToken, refreshToken };
   }
-
+  /**
+   * 注册用户
+   * @param registerDto 注册数据传输对象
+   * @returns 注册响应数据传输对象
+   */
   async register(registerDto: RegisterDto): Promise<RegisterResponseDto> {
     const userExists = await this.userService.findOneBySchoolId(
       registerDto.schoolId,
