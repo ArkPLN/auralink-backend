@@ -73,7 +73,7 @@ export class User {
   @ApiProperty({
     description: '用户角色权限',
     example: 'user',
-    enum: ['user', 'admin'],
+    enum: ['user', 'admin', 'root'],
     default: 'user',
   })
   @Column({ default: 'user' })

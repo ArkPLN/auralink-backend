@@ -117,7 +117,10 @@ export class UserController {
     }
 
     // 使用数据库中最新的角色和状态进行权限校验
-    if (currentUser.userRole !== 'admin' || !currentUser.isActive) {
+    if (
+      (currentUser.userRole !== 'admin' && currentUser.userRole !== 'root') ||
+      !currentUser.isActive
+    ) {
       throw new ForbiddenException({
         statusCode: 403,
         message: '权限不足，仅允许管理员角色且状态为激活的用户访问',

@@ -39,11 +39,11 @@ export class FindUsersBodyDto {
   @ApiProperty({
     description: '用户角色（必须与JWT中的role一致）',
     example: 'admin',
-    enum: ['user', 'admin'],
+    enum: ['user', 'admin', 'root'],
   })
   @IsString({ message: 'userRole 必须为字符串' })
-  @IsEnum(['user', 'admin'], {
-    message: 'userRole 必须为 user 或 admin',
+  @IsEnum(['user', 'admin', 'root'], {
+    message: 'userRole 必须为 user 或 admin或root',
   })
   userRole: string;
 }
