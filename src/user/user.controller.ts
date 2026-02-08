@@ -64,7 +64,7 @@ export class UserController {
   @ApiOperation({
     summary: '获取用户列表',
     description:
-      '获取活跃用户列表。需要双重身份验证：JWT令牌和请求体中的用户信息必须一致。',
+      '获取活跃用户列表。JWT令牌验证通过后，系统会从数据库查询用户最新角色信息进行权限校验。',
   })
   @ApiResponse({
     status: 200,
@@ -77,11 +77,11 @@ export class UserController {
   })
   @ApiResponse({
     status: 403,
-    description: '权限不足，仅允许userRole为admin且isActive=true的用户访问',
+    description: '权限不足，仅允许管理员角色且状态为激活的用户访问',
   })
   @ApiResponse({
     status: 400,
-    description: '请求参数验证失败或用户信息不匹配',
+    description: '请求参数验证失败',
   })
   @ApiQuery({
     name: 'n',
@@ -91,7 +91,7 @@ export class UserController {
   })
   @ApiBody({
     type: FindUsersBodyDto,
-    description: '用户身份验证信息（必须与JWT令牌中的信息一致）',
+    description: '用户身份验证信息',
   })
   @Post('findAll')
   async findAll(
@@ -99,24 +99,27 @@ export class UserController {
     @Query() query: FindUsersQueryDto,
     @Body() bodyDto: FindUsersBodyDto,
   ): Promise<FindUsersResponseDto> {
-    const currentUser = req['user'] as JwtPayload;
+    // 从JWT payload中获取用户ID（JWT已通过JwtAuthGuard验证）
+    const jwtPayload = req['user'] as JwtPayload;
+    const userId = jwtPayload.sub;
 
-    if (currentUser.userRole !== 'admin' || !currentUser.isActive) {
-      throw new ForbiddenException({
-        statusCode: 403,
-        message: '权限不足，仅允许userRole为admin且isActive=true的用户访问',
-        error: 'Forbidden',
+    // 从数据库查询最新的用户信息（包括角色和状态）
+    const currentUser = await this.userService.findOneById(userId);
+
+    if (!currentUser) {
+      throw new UnauthorizedException({
+        statusCode: 401,
+        message: '用户不存在或已被删除',
+        error: 'Unauthorized',
       });
     }
 
-    if (
-      currentUser.sub !== bodyDto.id ||
-      currentUser.role !== bodyDto.userRole
-    ) {
-      throw new UnauthorizedException({
-        statusCode: 400,
-        message: '用户信息不匹配，JWT令牌与请求体中的用户信息不一致',
-        error: 'BadRequest',
+    // 使用数据库中最新的角色和状态进行权限校验
+    if (currentUser.userRole !== 'admin' || !currentUser.isActive) {
+      throw new ForbiddenException({
+        statusCode: 403,
+        message: '权限不足，仅允许管理员角色且状态为激活的用户访问',
+        error: 'Forbidden',
       });
     }
 
@@ -159,8 +162,8 @@ export class UserController {
     @Req() req: Request,
     @Body() updateUserDto: UpdateUserDto,
   ): Promise<MeResponseDto> {
-    const currentUser = req['user'] as JwtPayload;
-    const userId = currentUser.sub;
+    const userPayload = req['user'] as JwtPayload;
+    const userId = userPayload.sub;
 
     const updatedUser = await this.userService.updateUser(
       userId,
