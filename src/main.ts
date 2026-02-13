@@ -2,9 +2,14 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { apiReference } from '@scalar/nestjs-api-reference';
+import { MikroORM } from '@mikro-orm/core';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  const orm = app.get(MikroORM);
+  const generator = orm.getSchemaGenerator();
+  await generator.updateSchema();
 
   app.setGlobalPrefix('api/v1');
 

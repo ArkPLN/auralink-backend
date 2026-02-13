@@ -16,7 +16,6 @@ import {
   ChangePasswordDto,
   ChangePasswordResponseDto,
 } from './auth.dto';
-import { User } from 'src/user/entities/user.entity';
 
 @Injectable()
 export class AuthService {
@@ -24,25 +23,11 @@ export class AuthService {
     private userService: UserService,
     private jwtService: JwtService,
   ) {}
-  /**
-   * 获取用户令牌
-   * @param userId 用户ID
-   * @param schoolId 学校ID
-   * @param userRole 用户角色
-   * @param isActive 用户是否激活
-   * @returns 包含访问令牌和刷新令牌的对象
-   */
-  async getTokens(
-    userId: number,
-    schoolId: string,
-    userRole: string,
-    isActive: boolean,
-  ) {
+
+  async getTokens(userId: number, schoolId: string, isActive: boolean) {
     const payload = {
       sub: userId,
       schoolId: schoolId,
-      role: userRole,
-      userRole: userRole,
       isActive: isActive,
     };
 
@@ -59,11 +44,7 @@ export class AuthService {
 
     return { accessToken, refreshToken };
   }
-  /**
-   * 注册用户
-   * @param registerDto 注册数据传输对象
-   * @returns 注册响应数据传输对象
-   */
+
   async register(registerDto: RegisterDto): Promise<RegisterResponseDto> {
     const userExists = await this.userService.findOneBySchoolId(
       registerDto.schoolId,
@@ -84,12 +65,10 @@ export class AuthService {
     const tokens = await this.getTokens(
       newUser.id,
       newUser.schoolId,
-      newUser.userRole,
       newUser.isActive,
     );
     await this.updateRefreshToken(newUser.id, tokens.refreshToken);
 
-    // 使用对象展开构造响应，更简洁
     return {
       ...tokens,
       id: newUser.id,
@@ -98,11 +77,6 @@ export class AuthService {
     };
   }
 
-  /**
-   * 用户登录
-   * @param loginDto 登录数据传输对象
-   * @returns 登录响应数据传输对象
-   */
   async login(loginDto: LoginDto): Promise<LoginResponseDto> {
     const user = await this.userService.findOneBySchoolId(loginDto.schoolId);
     if (!user) throw new UnauthorizedException('学号或密码错误');
@@ -113,12 +87,10 @@ export class AuthService {
     const tokens = await this.getTokens(
       user.id,
       user.schoolId,
-      user.userRole,
       user.isActive,
     );
     await this.updateRefreshToken(user.id, tokens.refreshToken);
 
-    // 使用对象展开构造响应
     return {
       ...tokens,
       id: user.id,
@@ -140,16 +112,8 @@ export class AuthService {
 
       const userId = payload.sub;
 
-      const userWithToken = await this.userService['usersRepository'].findOne({
-        where: { id: userId },
-        select: [
-          'id',
-          'schoolId',
-          'userRole',
-          'hashedRefreshToken',
-          'isActive',
-        ],
-      });
+      const userWithToken =
+        await this.userService.findOneWithRefreshToken(userId);
 
       if (!userWithToken || !userWithToken.hashedRefreshToken) {
         throw new ForbiddenException('Access Denied');
@@ -168,12 +132,10 @@ export class AuthService {
       const tokens = await this.getTokens(
         userWithToken.id,
         userWithToken.schoolId,
-        userWithToken.userRole,
         userWithToken.isActive,
       );
       await this.updateRefreshToken(userWithToken.id, tokens.refreshToken);
 
-      // 直接返回 tokens，符合 RefreshResponseDto 结构
       return tokens;
     } catch (error) {
       if (error.name === 'JsonWebTokenError') {

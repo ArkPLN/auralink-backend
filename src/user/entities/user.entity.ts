@@ -1,23 +1,29 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryKey,
+  Property,
+  Unique,
+} from '@mikro-orm/core';
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 
-@Entity('users')
+@Entity({ tableName: 'users' })
 export class User {
   @ApiProperty({
     description: '用户唯一标识ID',
     example: 1,
   })
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryKey()
+  id!: number;
 
   @ApiProperty({
     description: '学校学号，用于登录',
     example: '2023001001',
     uniqueItems: true,
   })
-  @Column({ unique: true, nullable: false })
-  schoolId: string;
+  @Unique()
+  @Property({ nullable: false })
+  schoolId!: string;
 
   @ApiProperty({
     description: '用户密码（已加密的哈希值）',
@@ -25,24 +31,24 @@ export class User {
     writeOnly: true,
   })
   @Exclude()
-  @Column()
-  password: string;
+  @Property()
+  password!: string;
 
   @ApiProperty({
     description: '用户真实姓名',
     example: '张三',
     required: false,
   })
-  @Column({ nullable: true })
-  name: string;
+  @Property({ nullable: true })
+  name?: string;
 
   @ApiProperty({
     description: '用户手机号',
     example: '13800138000',
     required: false,
   })
-  @Column({ nullable: true })
-  phone: string;
+  @Property({ nullable: true })
+  phone?: string;
 
   @ApiProperty({
     description: '用户邮箱地址',
@@ -50,8 +56,9 @@ export class User {
     required: false,
     uniqueItems: true,
   })
-  @Column({ unique: true, nullable: true })
-  email: string;
+  @Unique()
+  @Property({ nullable: true })
+  email?: string;
 
   @ApiProperty({
     description: '用户所属部门',
@@ -59,16 +66,16 @@ export class User {
     enum: ['internMember', 'member', 'admin'],
     default: 'internMember',
   })
-  @Column({ default: 'internMember' })
-  department: string;
+  @Property({ default: 'internMember' })
+  department: string = 'internMember';
 
   @ApiProperty({
     description: '用户是否处于激活状态',
     example: true,
     default: true,
   })
-  @Column({ default: true })
-  isActive: boolean;
+  @Property({ default: true })
+  isActive: boolean = true;
 
   @ApiProperty({
     description: '用户角色权限',
@@ -76,8 +83,8 @@ export class User {
     enum: ['user', 'admin', 'root'],
     default: 'user',
   })
-  @Column({ default: 'user' })
-  userRole: string;
+  @Property({ default: 'user' })
+  userRole: string = 'user';
 
   @ApiProperty({
     description: '刷新令牌的哈希值',
@@ -86,20 +93,23 @@ export class User {
     writeOnly: true,
   })
   @Exclude()
-  @Column({ nullable: true })
+  @Property({ nullable: true })
   hashedRefreshToken?: string;
 
   @ApiProperty({
     description: '用户创建时间',
     example: '2024-01-01T00:00:00.000Z',
   })
-  @Column({ default: () => 'CURRENT_TIMESTAMP' })
-  createdAt: Date;
+  @Property({ defaultRaw: 'CURRENT_TIMESTAMP' })
+  createdAt: Date = new Date();
 
   @ApiProperty({
     description: '用户最后更新时间',
     example: '2024-01-01T00:00:00.000Z',
   })
-  @Column({ default: () => 'CURRENT_TIMESTAMP' })
-  updatedAt: Date;
+  @Property({
+    defaultRaw: 'CURRENT_TIMESTAMP',
+    onUpdate: () => new Date(),
+  })
+  updatedAt: Date = new Date();
 }

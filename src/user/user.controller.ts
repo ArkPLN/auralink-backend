@@ -9,8 +9,6 @@ import {
   Query,
   ForbiddenException,
   Body,
-  UseInterceptors,
-  ClassSerializerInterceptor,
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { UserService } from './user.service';
@@ -34,7 +32,6 @@ import { MeResponseDto, PublicUserDto } from './dto/user-response.dto';
 
 @ApiTags('用户模块')
 @Controller('user')
-@UseInterceptors(ClassSerializerInterceptor)
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
@@ -55,10 +52,28 @@ export class UserController {
       throw new UnauthorizedException('用户不存在');
     }
 
-    // 使用 plainToInstance 转换为 DTO，自动剔除多余字段
-    return plainToInstance(MeResponseDto, user, {
-      excludeExtraneousValues: true,
-    });
+    if (!user.isActive) {
+      throw new UnauthorizedException('账号已被禁用');
+    }
+
+    if (userPayload.isActive !== user.isActive) {
+      throw new UnauthorizedException('令牌状态无效，请重新登录');
+    }
+
+    return plainToInstance(
+      MeResponseDto,
+      {
+        id: user.id,
+        schoolId: user.schoolId,
+        name: user.name,
+        phone: user.phone,
+        email: user.email,
+        department: user.department,
+        isActive: user.isActive,
+        userRole: user.userRole,
+      },
+      { excludeExtraneousValues: true },
+    );
   }
 
   @UseGuards(JwtAuthGuard)
@@ -101,11 +116,9 @@ export class UserController {
     @Query() query: FindUsersQueryDto,
     @Body() bodyDto: FindUsersBodyDto,
   ): Promise<FindUsersResponseDto> {
-    // 从JWT payload中获取用户ID（JWT已通过JwtAuthGuard验证）
     const jwtPayload = req['user'] as JwtPayload;
     const userId = jwtPayload.sub;
 
-    // 从数据库查询最新的用户信息（包括角色和状态）
     const currentUser = await this.userService.findOneById(userId);
 
     if (!currentUser) {
@@ -116,7 +129,14 @@ export class UserController {
       });
     }
 
-    // 使用数据库中最新的角色和状态进行权限校验
+    if (!currentUser.isActive) {
+      throw new UnauthorizedException('账号已被禁用');
+    }
+
+    if (jwtPayload.isActive !== currentUser.isActive) {
+      throw new UnauthorizedException('令牌状态无效，请重新登录');
+    }
+
     if (
       (currentUser.userRole !== 'admin' && currentUser.userRole !== 'root') ||
       !currentUser.isActive
@@ -131,11 +151,20 @@ export class UserController {
     const limit = query.n ?? 10;
     const users = await this.userService.findActiveUsers(limit);
 
-    // 转换为 PublicUserDto，只保留公开字段
-    const publicUsers = plainToInstance(PublicUserDto, users, {
-      // 只转换公开字段，排除 password 等敏感信息
-      excludeExtraneousValues: true,
-    });
+    const publicUsers = plainToInstance(
+      PublicUserDto,
+      users.map((u) => ({
+        id: u.id,
+        schoolId: u.schoolId,
+        name: u.name,
+        phone: u.phone,
+        email: u.email,
+        department: u.department,
+        userRole: u.userRole,
+        isActive: u.isActive,
+      })),
+      { excludeExtraneousValues: true },
+    );
 
     return {
       users: publicUsers,
@@ -172,15 +201,38 @@ export class UserController {
     const userPayload = req['user'] as JwtPayload;
     const userId = userPayload.sub;
 
+    const currentUser = await this.userService.findOneById(userId);
+    if (!currentUser) {
+      throw new UnauthorizedException('用户不存在');
+    }
+
+    if (!currentUser.isActive) {
+      throw new UnauthorizedException('账号已被禁用');
+    }
+
+    if (userPayload.isActive !== currentUser.isActive) {
+      throw new UnauthorizedException('令牌状态无效，请重新登录');
+    }
+
     const updatedUser = await this.userService.updateUser(
       userId,
       updateUserDto,
       userId,
     );
 
-    // 转换为 MeResponseDto
-    return plainToInstance(MeResponseDto, updatedUser, {
-      excludeExtraneousValues: true,
-    });
+    return plainToInstance(
+      MeResponseDto,
+      {
+        id: updatedUser.id,
+        schoolId: updatedUser.schoolId,
+        name: updatedUser.name,
+        phone: updatedUser.phone,
+        email: updatedUser.email,
+        department: updatedUser.department,
+        isActive: updatedUser.isActive,
+        userRole: updatedUser.userRole,
+      },
+      { excludeExtraneousValues: true },
+    );
   }
 }

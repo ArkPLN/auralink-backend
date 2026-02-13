@@ -16,13 +16,11 @@ export class JwtRefreshStrategy extends PassportStrategy(
     });
   }
 
-  validate(payload: JwtPayload) {
+  validate(payload: JwtPayload): JwtPayload {
     return {
       sub: payload.sub,
       schoolId: payload.schoolId,
-      role: payload.role,
-      userRole: payload.role,
-      isActive: true,
+      isActive: payload.isActive,
     };
   }
 }

@@ -3,61 +3,71 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager } from '@mikro-orm/postgresql';
 import { User } from './entities/user.entity';
 import { RegisterDto } from '../auth/auth.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UserService {
-  constructor(
-    @InjectRepository(User)
-    private usersRepository: Repository<User>,
-  ) {}
+  constructor(private readonly em: EntityManager) {}
 
   async findOneBySchoolId(schoolId: string): Promise<User | undefined> {
-    const user = await this.usersRepository.findOne({ where: { schoolId } });
-    return user === null ? undefined : user;
+    const user = await this.em.findOne(User, { schoolId });
+    return user ?? undefined;
   }
 
   async findOneById(id: number): Promise<User | undefined> {
-    const user = await this.usersRepository.findOne({ where: { id } });
-    return user === null ? undefined : user;
+    const user = await this.em.findOne(User, { id });
+    return user ?? undefined;
+  }
+
+  async findOneWithRefreshToken(id: number): Promise<User | undefined> {
+    const user = await this.em.findOne(User, { id });
+    return user ?? undefined;
   }
 
   async create(registerDto: RegisterDto): Promise<User> {
-    const user = this.usersRepository.create(registerDto);
-    return this.usersRepository.save(user);
+    const user = new User();
+    user.schoolId = registerDto.schoolId;
+    user.password = registerDto.password;
+    user.name = registerDto.name;
+    user.phone = registerDto.phone;
+    user.department = registerDto.department ?? 'internMember';
+    user.isActive = true;
+    user.userRole = 'user';
+    await this.em.persistAndFlush(user);
+    return user;
   }
 
   async update(id: number, updateData: Partial<User>) {
-    await this.usersRepository.update(id, updateData);
+    const user = await this.em.findOne(User, { id });
+    if (user) {
+      this.em.assign(user, updateData);
+      await this.em.flush();
+    }
   }
 
   async findActiveUsers(limit: number = 10): Promise<User[]> {
-    return this.usersRepository.find({
-      where: {
-        isActive: true,
+    return this.em.find(
+      User,
+      { isActive: true },
+      {
+        orderBy: { createdAt: 'ASC' },
+        limit,
       },
-      order: {
-        createdAt: 'ASC',
-      },
-      take: limit,
-    });
+    );
   }
 
   async findActiveAdminUsers(limit: number = 10): Promise<User[]> {
-    return this.usersRepository.find({
-      where: {
-        isActive: true,
-        userRole: 'admin',
+    return this.em.find(
+      User,
+      { isActive: true, userRole: 'admin' },
+      {
+        orderBy: { createdAt: 'ASC' },
+        limit,
       },
-      order: {
-        createdAt: 'ASC',
-      },
-      take: limit,
-    });
+    );
   }
 
   async updateUser(
@@ -65,7 +75,7 @@ export class UserService {
     updateUserDto: UpdateUserDto,
     currentUserId: number,
   ): Promise<User> {
-    const user = await this.usersRepository.findOne({ where: { id: userId } });
+    const user = await this.em.findOne(User, { id: userId });
 
     if (!user) {
       throw new NotFoundException({
@@ -83,9 +93,10 @@ export class UserService {
       });
     }
 
-    Object.assign(user, updateUserDto);
+    this.em.assign(user, updateUserDto);
     user.updatedAt = new Date();
+    await this.em.flush();
 
-    return this.usersRepository.save(user);
+    return user;
   }
 }
