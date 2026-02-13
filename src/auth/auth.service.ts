@@ -84,11 +84,7 @@ export class AuthService {
     const isMatch = await bcrypt.compare(loginDto.password, user.password);
     if (!isMatch) throw new UnauthorizedException('学号或密码错误');
 
-    const tokens = await this.getTokens(
-      user.id,
-      user.schoolId,
-      user.isActive,
-    );
+    const tokens = await this.getTokens(user.id, user.schoolId, user.isActive);
     await this.updateRefreshToken(user.id, tokens.refreshToken);
 
     return {
