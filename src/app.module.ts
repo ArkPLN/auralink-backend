@@ -6,6 +6,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { PostgreSqlDriver } from '@mikro-orm/postgresql';
+import { AdminlogModule } from './adminlog/adminlog.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { PostgreSqlDriver } from '@mikro-orm/postgresql';
     }),
     UserModule,
     AuthModule,
+    AdminlogModule,
   ],
   controllers: [AppController],
   providers: [AppService],

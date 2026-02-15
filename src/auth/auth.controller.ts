@@ -17,7 +17,6 @@ import {
   ChangePasswordDto,
   ChangePasswordResponseDto,
 } from './auth.dto';
-import { AuthGuard } from '@nestjs/passport';
 import {
   ApiOperation,
   ApiResponse,
