@@ -11,6 +11,21 @@ async function bootstrap() {
   const generator = orm.getSchemaGenerator();
   await generator.updateSchema();
 
+  app.enableCors({
+    origin: (origin, callback) => {
+      if (!origin || /^http:\/\/localhost(:\d+)?$/.test(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: '*',
+    credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+  });
+
   app.setGlobalPrefix('api/v1');
 
   const config = new DocumentBuilder()

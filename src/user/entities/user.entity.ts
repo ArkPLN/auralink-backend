@@ -58,11 +58,11 @@ export class User {
   @ApiProperty({
     description: '用户所属部门',
     example: '技术部',
-    enum: ['internMember', 'member', 'admin'],
+    enum: ['实习生', '开发部', '摄影部','设计部','部长'],
     default: 'internMember',
   })
-  @Property({ default: 'internMember' })
-  department: string = 'internMember';
+  @Property({ default: '实习生' })
+  department: string = '实习生';
 
   @ApiProperty({
     description: '用户是否处于激活状态',
