@@ -7,14 +7,22 @@ export class S3Service {
   private readonly s3: S3Client;
   private readonly bucketName: string;
   private readonly publicUrl: string;
-
+  // 从环境变量中获取 R2 配置
   constructor(private readonly configService: ConfigService) {
+    // 对象存储配置
     const endpoint = this.configService.getOrThrow<string>('R2_ENDPOINT');
-    const accessKeyId = this.configService.getOrThrow<string>('R2_ACCESS_KEY_ID');
-    const secretAccessKey = this.configService.getOrThrow<string>('R2_SECRET_ACCESS_KEY');
+    // 访问密钥配置
+    const accessKeyId =
+      this.configService.getOrThrow<string>('R2_ACCESS_KEY_ID');
+    // 密钥配置
+    const secretAccessKey = this.configService.getOrThrow<string>(
+      'R2_SECRET_ACCESS_KEY',
+    );
+    // 存储桶配置
     this.bucketName = this.configService.getOrThrow<string>('R2_BUCKET_NAME');
+    // 公开 URL 配置
     this.publicUrl = this.configService.get<string>('R2_PUBLIC_URL', endpoint);
-
+    // S3 客户端配置
     this.s3 = new S3Client({
       region: 'auto',
       endpoint,
@@ -25,6 +33,12 @@ export class S3Service {
     });
   }
 
+  /**
+   * 上传用户头像到 R2 存储桶
+   * @param userId 用户 ID
+   * @param file 上传的文件
+   * @returns 公开 URL
+   */
   async uploadAvatar(userId: number, file: Express.Multer.File) {
     if (!file) {
       throw new Error('文件不能为空');
