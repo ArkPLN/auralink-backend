@@ -12,6 +12,7 @@ export class UpdateUserDto extends OmitType(PartialType(User), [
   'isActive',
   'userRole',
   'hashedRefreshToken',
+  'avatarUrl',
   'createdAt',
   'updatedAt',
 ] as const) {}

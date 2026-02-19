@@ -20,6 +20,10 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiParam,
+  ApiUnauthorizedResponse,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
+  ApiBadRequestResponse,
 } from '@nestjs/swagger';
 import { AdminlogService } from './adminlog.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -75,14 +79,50 @@ export class AdminlogController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Get('log')
-  @ApiOperation({ summary: '查询管理员操作日志' })
+  @ApiOperation({
+    summary: '查询管理员操作日志',
+    description:
+      '分页查询管理员操作日志，支持按操作类型、时间范围、操作用户ID等条件筛选。仅管理员和root用户可访问。',
+  })
   @ApiResponse({
     status: 200,
-    description: '返回操作日志列表',
+    description:
+      '返回操作日志列表，包含操作人、被操作用户、操作类型、修改前后值等信息',
     type: AdminLogListResponseDto,
   })
-  @ApiResponse({ status: 401, description: '未授权' })
-  @ApiResponse({ status: 403, description: '权限不足' })
+  @ApiUnauthorizedResponse({
+    description: '未授权或令牌无效',
+    schema: {
+      examples: {
+        userNotFound: {
+          summary: '用户不存在',
+          value: {
+            statusCode: 401,
+            message: '用户不存在',
+            error: 'Unauthorized',
+          },
+        },
+        accountDisabled: {
+          summary: '账号已禁用',
+          value: {
+            statusCode: 401,
+            message: '账号已被禁用',
+            error: 'Unauthorized',
+          },
+        },
+      },
+    },
+  })
+  @ApiForbiddenResponse({
+    description: '权限不足，仅允许管理员访问',
+    schema: {
+      example: {
+        statusCode: 403,
+        message: '权限不足，仅允许管理员访问',
+        error: 'Forbidden',
+      },
+    },
+  })
   async getLogs(
     @Req() req: Request,
     @Query() query: QueryAdminLogDto,
@@ -94,12 +134,49 @@ export class AdminlogController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Put(':id')
-  @ApiOperation({ summary: '更新单个用户信息' })
-  @ApiParam({ name: 'id', description: '用户ID' })
-  @ApiResponse({ status: 200, description: '更新成功' })
-  @ApiResponse({ status: 401, description: '未授权' })
-  @ApiResponse({ status: 403, description: '权限不足' })
-  @ApiResponse({ status: 404, description: '用户不存在' })
+  @ApiOperation({
+    summary: '更新单个用户信息',
+    description:
+      '管理员更新指定用户的信息。可修改的字段包括姓名、手机、邮箱、部门、激活状态、角色等。每次修改都会记录操作日志，包含修改前后的值。',
+  })
+  @ApiParam({
+    name: 'id',
+    description: '用户ID',
+    type: Number,
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: '更新成功',
+    schema: {
+      example: {
+        message: '更新成功',
+      },
+    },
+  })
+  @ApiUnauthorizedResponse({
+    description: '未授权',
+  })
+  @ApiForbiddenResponse({
+    description: '权限不足',
+    schema: {
+      example: {
+        statusCode: 403,
+        message: '权限不足，仅允许管理员访问',
+        error: 'Forbidden',
+      },
+    },
+  })
+  @ApiNotFoundResponse({
+    description: '用户不存在',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: '用户不存在',
+        error: 'NotFound',
+      },
+    },
+  })
   async updateUser(
     @Req() req: Request,
     @Param('id', ParseIntPipe) id: number,
@@ -152,14 +229,29 @@ export class AdminlogController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Put('batch')
-  @ApiOperation({ summary: '批量更新用户信息' })
+  @ApiOperation({
+    summary: '批量更新用户信息',
+    description:
+      '批量更新多个用户的信息。每个用户的更新操作都会单独记录日志。返回成功和失败的数量及详情。',
+  })
   @ApiResponse({
     status: 200,
-    description: '批量更新结果',
+    description: '批量更新结果，包含成功数量、失败数量和失败详情',
     type: BatchOperationResultDto,
   })
-  @ApiResponse({ status: 401, description: '未授权' })
-  @ApiResponse({ status: 403, description: '权限不足' })
+  @ApiUnauthorizedResponse({
+    description: '未授权',
+  })
+  @ApiForbiddenResponse({
+    description: '权限不足',
+    schema: {
+      example: {
+        statusCode: 403,
+        message: '权限不足，仅允许管理员访问',
+        error: 'Forbidden',
+      },
+    },
+  })
   async batchUpdateUsers(
     @Req() req: Request,
     @Body() batchDto: BatchUpdateDto,
@@ -236,14 +328,41 @@ export class AdminlogController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Delete('batch')
-  @ApiOperation({ summary: '批量删除用户' })
+  @ApiOperation({
+    summary: '批量删除用户',
+    description:
+      '批量删除多个用户账户。仅root用户可操作，且不能删除root用户。每个删除操作都会单独记录日志。',
+  })
   @ApiResponse({
     status: 200,
-    description: '批量删除结果',
+    description: '批量删除结果，包含成功数量、失败数量和失败详情',
     type: BatchOperationResultDto,
   })
-  @ApiResponse({ status: 401, description: '未授权' })
-  @ApiResponse({ status: 403, description: '权限不足' })
+  @ApiUnauthorizedResponse({
+    description: '未授权',
+  })
+  @ApiForbiddenResponse({
+    description: '权限不足或尝试删除root用户',
+    schema: {
+      examples: {
+        notRoot: {
+          summary: '非root用户',
+          value: {
+            statusCode: 403,
+            message: '仅root用户可以删除用户',
+            error: 'Forbidden',
+          },
+        },
+        cannotDeleteRoot: {
+          summary: '不能删除root用户',
+          value: {
+            id: 1,
+            reason: '不能删除root用户',
+          },
+        },
+      },
+    },
+  })
   async batchDeleteUsers(
     @Req() req: Request,
     @Body() batchDto: BatchDeleteDto,

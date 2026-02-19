@@ -58,7 +58,7 @@ export class User {
   @ApiProperty({
     description: '用户所属部门',
     example: '技术部',
-    enum: ['实习生', '开发部', '摄影部','设计部','部长'],
+    enum: ['实习生', '开发部', '摄影部', '设计部', '部长'],
     default: 'internMember',
   })
   @Property({ default: '实习生' })
@@ -90,6 +90,14 @@ export class User {
   @Exclude()
   @Property({ nullable: true })
   hashedRefreshToken?: string;
+
+  @ApiProperty({
+    description: '用户头像URL',
+    example: 'https://example.com/avatar.jpg',
+    required: false,
+  })
+  @Property({ nullable: true })
+  avatarUrl?: string;
 
   @ApiProperty({
     description: '用户创建时间',

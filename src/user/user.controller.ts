@@ -21,6 +21,10 @@ import {
   ApiQuery,
   ApiBody,
   ApiBearerAuth,
+  ApiUnauthorizedResponse,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
+  ApiBadRequestResponse,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import {
@@ -63,13 +67,48 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: '获取当前用户信息' })
+  @Get('me')
+  @ApiOperation({
+    summary: '获取当前用户信息',
+    description:
+      '获取当前登录用户的详细信息，包括ID、学号、姓名、联系方式、部门、角色等。不包含密码等敏感信息。',
+  })
   @ApiResponse({
     status: 200,
     description: '返回用户信息，不包含密码',
     type: MeResponseDto,
   })
-  @Get('me')
+  @ApiUnauthorizedResponse({
+    description: '未授权或令牌无效',
+    schema: {
+      examples: {
+        userNotFound: {
+          summary: '用户不存在',
+          value: {
+            statusCode: 401,
+            message: '用户不存在',
+            error: 'Unauthorized',
+          },
+        },
+        accountDisabled: {
+          summary: '账号已禁用',
+          value: {
+            statusCode: 401,
+            message: '账号已被禁用',
+            error: 'Unauthorized',
+          },
+        },
+        tokenInvalid: {
+          summary: '令牌状态无效',
+          value: {
+            statusCode: 401,
+            message: '令牌状态无效，请重新登录',
+            error: 'Unauthorized',
+          },
+        },
+      },
+    },
+  })
   async getMe(@Req() req: Request): Promise<MeResponseDto> {
     const userPayload = req['user'] as JwtPayload;
     const user = await this.userService.findOneBySchoolId(userPayload.schoolId);
@@ -104,26 +143,38 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
+  @Post('findAll')
   @ApiOperation({
     summary: '获取用户列表',
     description:
-      '获取活跃用户列表。JWT令牌验证通过后，系统会从数据库查询用户最新角色信息进行权限校验。',
+      '获取活跃用户列表。仅管理员和root用户可访问。JWT令牌验证通过后，系统会从数据库查询用户最新角色信息进行权限校验。',
   })
   @ApiResponse({
     status: 200,
     description: '返回前n个活跃用户信息',
     type: FindUsersResponseDto,
   })
-  @ApiResponse({
-    status: 401,
+  @ApiUnauthorizedResponse({
     description: 'JWT令牌无效或已过期',
+    schema: {
+      example: {
+        statusCode: 401,
+        message: '用户不存在或已被删除',
+        error: 'Unauthorized',
+      },
+    },
   })
-  @ApiResponse({
-    status: 403,
+  @ApiForbiddenResponse({
     description: '权限不足，仅允许管理员角色且状态为激活的用户访问',
+    schema: {
+      example: {
+        statusCode: 403,
+        message: '权限不足，仅允许管理员角色且状态为激活的用户访问',
+        error: 'Forbidden',
+      },
+    },
   })
-  @ApiResponse({
-    status: 400,
+  @ApiBadRequestResponse({
     description: '请求参数验证失败',
   })
   @ApiQuery({
@@ -131,12 +182,13 @@ export class UserController {
     required: false,
     description: '返回用户数量限制，默认为10，最大为100',
     example: 10,
+    type: Number,
   })
   @ApiBody({
     type: FindUsersBodyDto,
     description: '用户身份验证信息',
+    required: false,
   })
-  @Post('findAll')
   async findAll(
     @Req() req: Request,
     @Query() query: FindUsersQueryDto,
@@ -201,25 +253,50 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: '更新用户信息' })
+  @Put('update')
+  @ApiOperation({
+    summary: '更新用户信息',
+    description:
+      '更新当前登录用户的个人信息。用户只能更新自己的信息，不能修改密码、角色、激活状态等敏感字段。',
+  })
   @ApiResponse({
     status: 200,
     description: '用户信息更新成功，返回更新后的用户信息',
     type: MeResponseDto,
   })
-  @ApiResponse({
-    status: 403,
+  @ApiUnauthorizedResponse({
+    description: '未授权或用户不存在',
+    schema: {
+      examples: {
+        userNotFound: {
+          summary: '用户不存在',
+          value: {
+            statusCode: 401,
+            message: '用户不存在',
+            error: 'Unauthorized',
+          },
+        },
+        accountDisabled: {
+          summary: '账号已禁用',
+          value: {
+            statusCode: 401,
+            message: '账号已被禁用',
+            error: 'Unauthorized',
+          },
+        },
+      },
+    },
+  })
+  @ApiForbiddenResponse({
     description: '权限不足，只能更新自己的信息',
   })
-  @ApiResponse({
-    status: 404,
+  @ApiNotFoundResponse({
     description: '用户不存在',
   })
   @ApiBody({
     type: UpdateUserDto,
     description: '用户更新信息（不包含密码）',
   })
-  @Put('update')
   async updateUser(
     @Req() req: Request,
     @Body() updateUserDto: UpdateUserDto,
@@ -284,14 +361,29 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Get('admin')
-  @ApiOperation({ summary: '获取所有管理员列表' })
+  @ApiOperation({
+    summary: '获取所有管理员列表',
+    description:
+      '获取系统中所有管理员（包括admin和root角色）的列表。仅root用户可访问。',
+  })
   @ApiResponse({
     status: 200,
     description: '返回管理员列表',
     type: AdminListResponseDto,
   })
-  @ApiResponse({ status: 401, description: '未授权' })
-  @ApiResponse({ status: 403, description: '权限不足' })
+  @ApiUnauthorizedResponse({
+    description: '未授权或用户不存在',
+  })
+  @ApiForbiddenResponse({
+    description: '权限不足，仅允许root用户访问',
+    schema: {
+      example: {
+        statusCode: 403,
+        message: '权限不足，仅允许root用户访问',
+        error: 'Forbidden',
+      },
+    },
+  })
   async getAdmins(@Req() req: Request): Promise<AdminListResponseDto> {
     await this.checkRootPermission(req);
 
@@ -322,11 +414,48 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Post('admin')
-  @ApiOperation({ summary: '新增管理员账户' })
-  @ApiResponse({ status: 201, description: '创建成功', type: AdminResponseDto })
-  @ApiResponse({ status: 400, description: '参数错误' })
-  @ApiResponse({ status: 401, description: '未授权' })
-  @ApiResponse({ status: 403, description: '权限不足' })
+  @ApiOperation({
+    summary: '新增管理员账户',
+    description: '创建新的管理员账户。仅root用户可操作。创建时会记录操作日志。',
+  })
+  @ApiResponse({
+    status: 201,
+    description: '创建成功，返回新创建的管理员信息',
+    type: AdminResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: '参数错误',
+  })
+  @ApiUnauthorizedResponse({
+    description: '未授权',
+  })
+  @ApiForbiddenResponse({
+    description: '权限不足或学号已存在',
+    schema: {
+      examples: {
+        notRoot: {
+          summary: '非root用户',
+          value: {
+            statusCode: 403,
+            message: '权限不足，仅允许root用户访问',
+            error: 'Forbidden',
+          },
+        },
+        schoolIdExists: {
+          summary: '学号已存在',
+          value: {
+            statusCode: 403,
+            message: '该学号已存在',
+            error: 'Forbidden',
+          },
+        },
+      },
+    },
+  })
+  @ApiBody({
+    type: CreateAdminDto,
+    description: '管理员账户信息',
+  })
   async createAdmin(
     @Req() req: Request,
     @Body() createDto: CreateAdminDto,
@@ -379,12 +508,52 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Put('admin')
-  @ApiOperation({ summary: '更新管理员信息' })
-  @ApiResponse({ status: 200, description: '更新成功', type: AdminResponseDto })
-  @ApiResponse({ status: 400, description: '参数错误' })
-  @ApiResponse({ status: 401, description: '未授权' })
-  @ApiResponse({ status: 403, description: '权限不足' })
-  @ApiResponse({ status: 404, description: '管理员不存在' })
+  @ApiOperation({
+    summary: '更新管理员信息',
+    description:
+      '更新指定管理员的信息。仅root用户可操作。更新时会记录操作日志，包括修改前后的值。',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '更新成功，返回更新后的管理员信息',
+    type: AdminResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: '参数错误',
+  })
+  @ApiUnauthorizedResponse({
+    description: '未授权',
+  })
+  @ApiForbiddenResponse({
+    description: '权限不足或目标用户不是管理员',
+    schema: {
+      examples: {
+        notRoot: {
+          summary: '非root用户',
+          value: {
+            statusCode: 403,
+            message: '权限不足，仅允许root用户访问',
+            error: 'Forbidden',
+          },
+        },
+        notAdmin: {
+          summary: '目标用户不是管理员',
+          value: {
+            statusCode: 403,
+            message: '目标用户不是管理员',
+            error: 'Forbidden',
+          },
+        },
+      },
+    },
+  })
+  @ApiNotFoundResponse({
+    description: '用户不存在',
+  })
+  @ApiBody({
+    type: UpdateAdminDto,
+    description: '管理员更新信息',
+  })
   async updateAdmin(
     @Req() req: Request,
     @Body() updateDto: UpdateAdminDto,
@@ -451,12 +620,56 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Delete('admin')
-  @ApiOperation({ summary: '删除管理员账户' })
-  @ApiResponse({ status: 200, description: '删除成功' })
-  @ApiResponse({ status: 400, description: '参数错误' })
-  @ApiResponse({ status: 401, description: '未授权' })
-  @ApiResponse({ status: 403, description: '权限不足' })
-  @ApiResponse({ status: 404, description: '管理员不存在' })
+  @ApiOperation({
+    summary: '删除管理员账户',
+    description:
+      '删除指定的管理员账户。仅root用户可操作，且只能删除普通管理员，不能删除root用户。删除前会记录操作日志。',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '删除成功',
+    schema: {
+      example: {
+        message: '删除成功',
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: '参数错误',
+  })
+  @ApiUnauthorizedResponse({
+    description: '未授权',
+  })
+  @ApiForbiddenResponse({
+    description: '权限不足或尝试删除root用户',
+    schema: {
+      examples: {
+        notRoot: {
+          summary: '非root用户',
+          value: {
+            statusCode: 403,
+            message: '权限不足，仅允许root用户访问',
+            error: 'Forbidden',
+          },
+        },
+        cannotDeleteRoot: {
+          summary: '不能删除root用户',
+          value: {
+            statusCode: 403,
+            message: '只能删除普通管理员，不能删除root用户',
+            error: 'Forbidden',
+          },
+        },
+      },
+    },
+  })
+  @ApiNotFoundResponse({
+    description: '用户不存在',
+  })
+  @ApiBody({
+    type: DeleteAdminDto,
+    description: '要删除的管理员ID',
+  })
   async deleteAdmin(
     @Req() req: Request,
     @Body() deleteDto: DeleteAdminDto,
