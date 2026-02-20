@@ -9,7 +9,7 @@ import {
   IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { PublicUserDto } from './user-response.dto';
+import { PublicUserDto } from '../entities/user.entity';
 
 export class FindUsersQueryDto {
   @ApiProperty({

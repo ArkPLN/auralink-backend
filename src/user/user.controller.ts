@@ -11,7 +11,11 @@ import {
   ForbiddenException,
   Body,
   NotFoundException,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { plainToInstance } from 'class-transformer';
 import { UserService } from './user.service';
 import {
@@ -25,6 +29,7 @@ import {
   ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiBadRequestResponse,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import {
@@ -34,9 +39,9 @@ import {
 } from './dto/find-users.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtPayload } from 'src/auth/strategies/jwt';
-import { MeResponseDto, PublicUserDto } from './dto/user-response.dto';
+import { MeResponseDto } from './dto/user-response.dto';
 import { EntityManager } from '@mikro-orm/postgresql';
-import { User } from './entities/user.entity';
+import { User, PublicUserDto } from './entities/user.entity';
 import { AdminlogService } from '../adminlog/adminlog.service';
 import { AdminActionType } from '../adminlog/entities/adminlog.entity';
 import {
@@ -46,6 +51,7 @@ import {
   AdminListResponseDto,
   AdminResponseDto,
 } from '../adminlog/dto/admin-user.dto';
+import { AvatarUploadResponseDto } from './dto/avatar.dto';
 import * as bcrypt from 'bcrypt';
 
 @ApiTags('用户模块')
@@ -125,20 +131,9 @@ export class UserController {
       throw new UnauthorizedException('令牌状态无效，请重新登录');
     }
 
-    return plainToInstance(
-      MeResponseDto,
-      {
-        id: user.id,
-        schoolId: user.schoolId,
-        name: user.name,
-        phone: user.phone,
-        email: user.email,
-        department: user.department,
-        isActive: user.isActive,
-        userRole: user.userRole,
-      },
-      { excludeExtraneousValues: true },
-    );
+    return plainToInstance(MeResponseDto, user, {
+      excludeExtraneousValues: true,
+    });
   }
 
   @UseGuards(JwtAuthGuard)
@@ -229,20 +224,9 @@ export class UserController {
     const limit = query.n ?? 10;
     const users = await this.userService.findActiveUsers(limit);
 
-    const publicUsers = plainToInstance(
-      PublicUserDto,
-      users.map((u) => ({
-        id: u.id,
-        schoolId: u.schoolId,
-        name: u.name,
-        phone: u.phone,
-        email: u.email,
-        department: u.department,
-        userRole: u.userRole,
-        isActive: u.isActive,
-      })),
-      { excludeExtraneousValues: true },
-    );
+    const publicUsers = plainToInstance(PublicUserDto, users, {
+      excludeExtraneousValues: true,
+    });
 
     return {
       users: publicUsers,
@@ -323,20 +307,137 @@ export class UserController {
       userId,
     );
 
-    return plainToInstance(
-      MeResponseDto,
-      {
-        id: updatedUser.id,
-        schoolId: updatedUser.schoolId,
-        name: updatedUser.name,
-        phone: updatedUser.phone,
-        email: updatedUser.email,
-        department: updatedUser.department,
-        isActive: updatedUser.isActive,
-        userRole: updatedUser.userRole,
+    return plainToInstance(MeResponseDto, updatedUser, {
+      excludeExtraneousValues: true,
+    });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Post('avatar')
+  @ApiOperation({
+    summary: '上传用户头像',
+    description:
+      '上传并更新当前用户的头像。仅支持JPG或PNG格式，文件大小限制为5MB。如果用户已有头像，会先删除旧头像再上传新头像。',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    required: true,
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
       },
-      { excludeExtraneousValues: true },
-    );
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: '头像上传成功',
+    type: AvatarUploadResponseDto,
+  })
+  @ApiUnauthorizedResponse({
+    description: '未授权或用户不存在',
+    schema: {
+      examples: {
+        userNotFound: {
+          summary: '用户不存在',
+          value: {
+            statusCode: 401,
+            message: '用户不存在',
+            error: 'Unauthorized',
+          },
+        },
+        accountDisabled: {
+          summary: '账号已禁用',
+          value: {
+            statusCode: 401,
+            message: '账号已被禁用',
+            error: 'Unauthorized',
+          },
+        },
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: '文件格式或大小不符合要求',
+    schema: {
+      examples: {
+        noFile: {
+          summary: '未选择文件',
+          value: {
+            statusCode: 400,
+            message: '请选择要上传的文件',
+            error: 'BadRequest',
+          },
+        },
+        invalidFormat: {
+          summary: '文件格式不支持',
+          value: {
+            statusCode: 400,
+            message: '仅支持 JPG 或 PNG 格式的图片',
+            error: 'BadRequest',
+          },
+        },
+        tooLarge: {
+          summary: '文件过大',
+          value: {
+            statusCode: 400,
+            message: '文件大小不能超过 5MB',
+            error: 'BadRequest',
+          },
+        },
+      },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
+      fileFilter: (req, file, callback) => {
+        if (!file) {
+          return callback(new Error('请选择要上传的文件'), false);
+        }
+        const allowedMimeTypes = ['image/jpeg', 'image/png'];
+        if (!allowedMimeTypes.includes(file.mimetype)) {
+          return callback(new Error('仅支持 JPG 或 PNG 格式的图片'), false);
+        }
+        callback(null, true);
+      },
+    }),
+  )
+  async uploadAvatar(
+    @Req() req: Request,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<AvatarUploadResponseDto> {
+    const userPayload = req['user'] as JwtPayload;
+    const userId = userPayload.sub;
+
+    const currentUser = await this.userService.findOneById(userId);
+    if (!currentUser) {
+      throw new UnauthorizedException('用户不存在');
+    }
+
+    if (!currentUser.isActive) {
+      throw new UnauthorizedException('账号已被禁用');
+    }
+
+    if (userPayload.isActive !== currentUser.isActive) {
+      throw new UnauthorizedException('令牌状态无效，请重新登录');
+    }
+
+    if (!file) {
+      throw new BadRequestException({
+        statusCode: 400,
+        message: '请选择要上传的文件',
+        error: 'BadRequest',
+      });
+    }
+
+    return this.userService.uploadAvatar(userId, file);
   }
 
   private async checkRootPermission(req: Request): Promise<User> {

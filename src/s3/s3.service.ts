@@ -1,9 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+} from '@aws-sdk/client-s3';
 
 @Injectable()
 export class S3Service {
+  private readonly logger = new Logger(S3Service.name);
   private readonly s3: S3Client;
   private readonly bucketName: string;
   private readonly publicUrl: string;
@@ -48,7 +53,10 @@ export class S3Service {
       throw new Error('仅支持 JPEG 和 PNG 格式');
     }
 
-    const key = `avatars/${userId}.${file.mimetype.split('/')[1]}`;
+    const timestamp = Date.now();
+    const randomStr = Math.random().toString(36).substring(2, 8);
+    const ext = file.mimetype.split('/')[1];
+    const key = `avatars/${userId}_${timestamp}_${randomStr}.${ext}`;
 
     const command = new PutObjectCommand({
       Bucket: this.bucketName,
@@ -58,7 +66,29 @@ export class S3Service {
     });
 
     await this.s3.send(command);
+    this.logger.log(`用户 ${userId} 头像上传成功: ${key}`);
 
     return `${this.publicUrl}/${key}`;
+  }
+
+  async deleteAvatar(avatarUrl: string): Promise<void> {
+    if (!avatarUrl) {
+      return;
+    }
+
+    try {
+      const urlParts = avatarUrl.split('/');
+      const key = urlParts.slice(urlParts.indexOf('avatars')).join('/');
+
+      const command = new DeleteObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+      });
+
+      await this.s3.send(command);
+      this.logger.log(`旧头像删除成功: ${key}`);
+    } catch (error) {
+      this.logger.error(`删除旧头像失败: ${error.message}`);
+    }
   }
 }

@@ -1,9 +1,10 @@
 import { Entity, PrimaryKey, Property, Unique } from '@mikro-orm/core';
-import { ApiProperty } from '@nestjs/swagger';
-import { Exclude } from 'class-transformer';
+import { ApiProperty, OmitType } from '@nestjs/swagger';
+import { Exclude, Expose, Type } from 'class-transformer';
 
 @Entity({ tableName: 'users' })
 export class User {
+  @Expose()
   @ApiProperty({
     description: '用户唯一标识ID',
     example: 1,
@@ -11,6 +12,7 @@ export class User {
   @PrimaryKey()
   id!: number;
 
+  @Expose()
   @ApiProperty({
     description: '学校学号，用于登录',
     example: '2023001001',
@@ -20,15 +22,11 @@ export class User {
   @Property({ nullable: false })
   schoolId!: string;
 
-  @ApiProperty({
-    description: '用户密码（已加密的哈希值）',
-    example: '$2b$10$...',
-    writeOnly: true,
-  })
   @Exclude()
   @Property()
   password!: string;
 
+  @Expose()
   @ApiProperty({
     description: '用户真实姓名',
     example: '张三',
@@ -37,6 +35,7 @@ export class User {
   @Property({ nullable: true })
   name?: string;
 
+  @Expose()
   @ApiProperty({
     description: '用户手机号',
     example: '13800138000',
@@ -45,6 +44,7 @@ export class User {
   @Property({ nullable: true })
   phone?: string;
 
+  @Expose()
   @ApiProperty({
     description: '用户邮箱地址',
     example: 'user@example.com',
@@ -55,6 +55,7 @@ export class User {
   @Property({ nullable: true })
   email?: string;
 
+  @Expose()
   @ApiProperty({
     description: '用户所属部门',
     example: '技术部',
@@ -64,6 +65,7 @@ export class User {
   @Property({ default: '实习生' })
   department: string = '实习生';
 
+  @Expose()
   @ApiProperty({
     description: '用户是否处于激活状态',
     example: true,
@@ -72,6 +74,7 @@ export class User {
   @Property({ default: true })
   isActive: boolean = true;
 
+  @Expose()
   @ApiProperty({
     description: '用户角色权限',
     example: 'user',
@@ -81,16 +84,11 @@ export class User {
   @Property({ default: 'user' })
   userRole: string = 'user';
 
-  @ApiProperty({
-    description: '刷新令牌的哈希值',
-    example: '$2b$10$...',
-    required: false,
-    writeOnly: true,
-  })
   @Exclude()
   @Property({ nullable: true })
   hashedRefreshToken?: string;
 
+  @Expose()
   @ApiProperty({
     description: '用户头像URL',
     example: 'https://example.com/avatar.jpg',
@@ -99,6 +97,7 @@ export class User {
   @Property({ nullable: true })
   avatarUrl?: string;
 
+  @Expose()
   @ApiProperty({
     description: '用户创建时间',
     example: '2024-01-01T00:00:00.000Z',
@@ -106,6 +105,7 @@ export class User {
   @Property({ defaultRaw: 'CURRENT_TIMESTAMP' })
   createdAt: Date = new Date();
 
+  @Expose()
   @ApiProperty({
     description: '用户最后更新时间',
     example: '2024-01-01T00:00:00.000Z',
@@ -116,3 +116,16 @@ export class User {
   })
   updatedAt: Date = new Date();
 }
+
+export class UserResponseDto extends OmitType(User, [
+  'password',
+  'hashedRefreshToken',
+] as const) {}
+
+export class PublicUserDto extends OmitType(User, [
+  'password',
+  'hashedRefreshToken',
+  'avatarUrl',
+  'createdAt',
+  'updatedAt',
+] as const) {}

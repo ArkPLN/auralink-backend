@@ -7,6 +7,9 @@ import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { PostgreSqlDriver } from '@mikro-orm/postgresql';
 import { AdminlogModule } from './adminlog/adminlog.module';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { ClassSerializerInterceptor } from '@nestjs/common';
+import { S3Module } from './s3/s3.module';
 
 @Module({
   imports: [
@@ -33,8 +36,15 @@ import { AdminlogModule } from './adminlog/adminlog.module';
     UserModule,
     AuthModule,
     AdminlogModule,
+    S3Module,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ClassSerializerInterceptor,
+    },
+  ],
 })
 export class AppModule {}
