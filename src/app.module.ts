@@ -10,6 +10,7 @@ import { AdminlogModule } from './adminlog/adminlog.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ClassSerializerInterceptor } from '@nestjs/common';
 import { S3Module } from './s3/s3.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { S3Module } from './s3/s3.module';
     AuthModule,
     AdminlogModule,
     S3Module,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [
