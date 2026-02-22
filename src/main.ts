@@ -2,9 +2,31 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { apiReference } from '@scalar/nestjs-api-reference';
+import { MikroORM } from '@mikro-orm/core';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  const orm = app.get(MikroORM);
+  const generator = orm.getSchemaGenerator();
+  await generator.updateSchema();
+
+  app.enableCors({
+    origin: (origin, callback) => {
+      if (!origin || /^http:\/\/localhost(:\d+)?$/.test(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: '*',
+    credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+  });
+
+  app.setGlobalPrefix('api/v1');
 
   const config = new DocumentBuilder()
     .setTitle('社团管理系统 API')
@@ -28,6 +50,8 @@ async function bootstrap() {
 
   await app.listen(process.env.PORT || 3000);
   console.log(`应用已启动，监听端口 ${process.env.PORT || 3000}`);
-  console.log(`API 文档地址: http://localhost:${process.env.PORT || 3000}/reference`);
+  console.log(
+    `API 文档地址: http://localhost:${process.env.PORT || 3000}/reference`,
+  );
 }
 void bootstrap();

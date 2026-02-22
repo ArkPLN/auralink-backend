@@ -1,4 +1,18 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateUserDto } from './create-user.dto';
+import { OmitType, PartialType } from '@nestjs/swagger';
+import { User } from '../entities/user.entity';
 
-export class UpdateUserDto extends PartialType(CreateUserDto) {}
+/**
+ * 更新用户 DTO
+ * 排除 id, isActive, userRole 等不允许用户自行修改的字段
+ */
+export class UpdateUserDto extends OmitType(PartialType(User), [
+  'id',
+  'schoolId',
+  'password',
+  'isActive',
+  'userRole',
+  'hashedRefreshToken',
+  'avatarUrl',
+  'createdAt',
+  'updatedAt',
+] as const) {}

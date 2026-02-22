@@ -1,11 +1,17 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UserController } from './user.controller';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { User } from './entities/user.entity';
+import { AdminlogModule } from '../adminlog/adminlog.module';
+import { S3Module } from '../s3/s3.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User])],
+  imports: [
+    MikroOrmModule.forFeature([User]),
+    forwardRef(() => AdminlogModule),
+    S3Module,
+  ],
   controllers: [UserController],
   providers: [UserService],
   exports: [UserService],
