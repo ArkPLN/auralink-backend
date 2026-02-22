@@ -4,7 +4,6 @@ import { User } from '../entities/user.entity';
 export class MeResponseDto extends OmitType(User, [
   'password',
   'hashedRefreshToken',
-  'avatarUrl',
   'createdAt',
   'updatedAt',
 ] as const) {}

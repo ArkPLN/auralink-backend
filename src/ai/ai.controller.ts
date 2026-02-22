@@ -13,6 +13,7 @@ import {
   ApiBearerAuth,
   ApiBadRequestResponse,
   ApiInternalServerErrorResponse,
+  ApiBody,
 } from '@nestjs/swagger';
 import { AiService, QuizGenerationError } from './ai.service';
 import { Quiz } from './dto/quiz.dto';
@@ -31,8 +32,14 @@ export class AiController {
   @ApiOperation({
     summary: '生成测验题目',
     description:
-      '根据输入的文本内容，使用AI自动生成5道选择题，每题包含正确答案和详细解析。',
+      '根据输入的文本内容，使用AI自动生成指定数量（默认5道）选择题，每题包含正确答案和详细解析。',
   })
+  @ApiBody(
+    {
+      description: '生成测验题目请求体',
+      type: GenerateQuizDto,
+    }
+  )
   @ApiResponse({
     status: 200,
     description: '测验题目生成成功',
@@ -59,6 +66,6 @@ export class AiController {
     },
   })
   async generateQuiz(@Body() dto: GenerateQuizDto): Promise<Quiz> {
-    return this.aiService.generateQuiz(dto.text);
+    return this.aiService.generateQuiz(dto);
   }
 }

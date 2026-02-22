@@ -7,8 +7,7 @@ import {
   LanguageModel,
 } from 'ai';
 import { createZhipu } from 'zhipu-ai-provider';
-import { z } from 'zod';
-import { Quiz, QuizSchema } from './dto/quiz.dto';
+import { GenerateQuizDto, Quiz, QuizSchema } from './dto/quiz.dto';
 
 export class QuizGenerationError extends Error {
   constructor(
@@ -50,7 +49,8 @@ export class AiService {
     }
   }
 
-  async generateQuiz(inputText: string): Promise<Quiz> {
+  async generateQuiz(dto: GenerateQuizDto): Promise<Quiz> {
+    const { inputText, quizNums } = dto;
     if (!this.isConfigured || !this.model) {
       throw new QuizGenerationError(
         'AI服务未配置，请设置 ZHIPU_API_KEY 环境变量',
@@ -63,7 +63,7 @@ export class AiService {
       throw new QuizGenerationError('输入文本不能为空');
     }
 
-    const prompt = this.buildPrompt(inputText);
+    const prompt = this.buildPrompt(inputText, quizNums);
 
     try {
       const result = await generateText({
@@ -71,7 +71,7 @@ export class AiService {
         output: Output.object({
           name: 'Quiz',
           description: '基于输入文本生成的测验题目',
-          schema: QuizSchema,
+          schema: QuizSchema(quizNums ?? 5),
         }),
         prompt,
       });
@@ -93,19 +93,19 @@ export class AiService {
     }
   }
 
-  private buildPrompt(inputText: string): string {
+  private buildPrompt(inputText: string, quizNums?: number): string {
     return `# 角色定义
 你是一位资深的教育测评专家，拥有丰富的试题编写经验。你擅长根据文本材料设计高质量、有区分度的选择题。
 
 # 任务目标
-根据提供的文本内容，生成一套完整的测验题目，包含5道单项选择题。
+根据提供的文本内容，生成一套完整的测验题目，包含${quizNums ?? 5}道单项选择题。
 
 # 输出要求
 你必须严格按照以下JSON Schema格式输出：
 
 ## 测验结构
 - title: 测验标题，简洁概括文本主题（10-20字）
-- questions: 包含恰好5道题目的数组
+- questions: 包含恰好${quizNums ?? 5}道题目的数组
 
 ## 题目结构（每道题）
 - questionText: 题目文字，表述清晰无歧义，避免双重否定
@@ -117,10 +117,10 @@ export class AiService {
 - label: 选项标签（A/B/C/D）
 - content: 选项内容，简洁明了
 - isCorrect: 布尔值，每个题目仅一个为true
-- explanation: 解析说明
+- explanation: 解析说明，需引用原文依据
 
 # 出题原则
-1. **知识点覆盖**: 5道题目应覆盖文本的核心知识点，避免重复
+1. **知识点覆盖**: ${quizNums ?? 5}道题目应覆盖文本的核心知识点，避免重复
 2. **难度梯度**: 包含简单题（直接考查）、中等题（理解应用）、较难题（综合分析）
 3. **干扰项设计**: 错误选项应具有迷惑性，基于常见误解设计
 4. **解析质量**: 
