@@ -1,4 +1,4 @@
-import { DataSource } from 'typeorm';
+import { MikroORM } from '@mikro-orm/core';
 import * as dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.local' });
@@ -13,45 +13,32 @@ const getEnvNumber = (key: string, defaultValue: number): number => {
   return value ? parseInt(value, 10) : defaultValue;
 };
 
-interface DataSourceOptions {
-  host: string;
-  port: number;
-  database: string;
-  username: string;
-}
-
-const dataSource = new DataSource({
-  type: 'postgres',
-  host: getEnv('DB_HOST', 'localhost'),
-  port: getEnvNumber('DB_PORT', 5432),
-  username: getEnv('DB_USERNAME', 'postgres'),
-  password: getEnv('DB_PASSWORD', 'pgsql'),
-  database: getEnv('DB_DATABASE', 'postgres'),
-});
-
-interface DatabaseVersionResult {
-  version: string;
-}
-
 async function testConnection() {
   try {
-    console.log('正在测试TypeORM数据库连接...');
-    const options = dataSource.options as unknown as DataSourceOptions;
+    console.log('正在测试MikroORM数据库连接...');
     console.log('连接参数:');
-    console.log(`  - 主机: ${options.host}`);
-    console.log(`  - 端口: ${options.port}`);
-    console.log(`  - 数据库: ${options.database}`);
-    console.log(`  - 用户名: ${options.username}`);
+    console.log(`  - 主机: ${getEnv('DB_HOST', 'localhost')}`);
+    console.log(`  - 端口: ${getEnvNumber('DB_PORT', 5432)}`);
+    console.log(`  - 数据库: ${getEnv('DB_DATABASE', 'postgres')}`);
+    console.log(`  - 用户名: ${getEnv('DB_USERNAME', 'postgres')}`);
 
-    await dataSource.initialize();
+    const orm = await MikroORM.init({
+      dbName: getEnv('DB_DATABASE', 'postgres'),
+      host: getEnv('DB_HOST', 'localhost'),
+      port: getEnvNumber('DB_PORT', 5432),
+      user: getEnv('DB_USERNAME', 'postgres'),
+      password: getEnv('DB_PASSWORD', 'pgsql'),
+      entities: ['dist/**/*.entity.js'],
+      entitiesTs: ['src/**/*.entity.ts'],
+    });
+
     console.log('✅ 数据库连接成功！');
 
-    const databaseVersion =
-      await dataSource.query<DatabaseVersionResult[]>('SELECT version()');
-    const versionInfo = databaseVersion[0];
-    console.log('数据库版本:', versionInfo.version);
+    const connection = orm.em.getConnection();
+    const result = await connection.execute('SELECT version()');
+    console.log('数据库版本:', result[0].version);
 
-    await dataSource.destroy();
+    await orm.close();
     console.log('✅ 连接已关闭');
     process.exit(0);
   } catch (error) {

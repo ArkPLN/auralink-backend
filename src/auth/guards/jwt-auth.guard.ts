@@ -1,16 +1,11 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
-
-interface JwtUser {
-  sub: number;
-  schoolId: string;
-  role: string;
-}
+import { JwtPayload } from '../strategies/jwt';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
-  handleRequest<TUser = JwtUser>(
+  handleRequest<TUser = JwtPayload>(
     err: any,
     user: any,
     info: any,
