@@ -34,12 +34,10 @@ export class AiController {
     description:
       '根据输入的文本内容，使用AI自动生成指定数量（默认5道）选择题，每题包含正确答案和详细解析。',
   })
-  @ApiBody(
-    {
-      description: '生成测验题目请求体',
-      type: GenerateQuizDto,
-    }
-  )
+  @ApiBody({
+    description: '生成测验题目请求体',
+    type: GenerateQuizDto,
+  })
   @ApiResponse({
     status: 200,
     description: '测验题目生成成功',

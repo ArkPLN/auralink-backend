@@ -88,6 +88,21 @@ export class User {
   @Property({ default: 'user' })
   userRole: string = 'user';
 
+  @Expose()
+  @ApiProperty({
+    description: '用户职位',
+    example: '部员',
+    enum: ['部员', '部长', '实习部员'],
+    default: '部员',
+  })
+  @Property({ default: '部员' })
+  position: string = '部员';
+
+  @Expose()
+  @ApiProperty({ description: 'QQ号', example: '123456789', nullable: true })
+  @Property({ nullable: true })
+  qqNumber: string = '123456789';
+
   @Exclude()
   @Property({ nullable: true })
   hashedRefreshToken?: string;
@@ -132,19 +147,35 @@ export class PublicUserDto {
   schoolId: string;
 
   @Expose()
-  @ApiProperty({ description: '用户真实姓名', example: '张三', required: false })
+  @ApiProperty({
+    description: '用户真实姓名',
+    example: '张三',
+    required: false,
+  })
   name?: string;
 
   @Expose()
-  @ApiProperty({ description: '用户手机号', example: '13800138000', required: false })
+  @ApiProperty({
+    description: '用户手机号',
+    example: '13800138000',
+    required: false,
+  })
   phone?: string;
 
   @Expose()
-  @ApiProperty({ description: '用户邮箱地址', example: 'user@example.com', required: false })
+  @ApiProperty({
+    description: '用户邮箱地址',
+    example: 'user@example.com',
+    required: false,
+  })
   email?: string;
 
   @Expose()
-  @ApiProperty({ description: '用户所属部门', example: '技术部', default: '实习生' })
+  @ApiProperty({
+    description: '用户所属部门',
+    example: '技术部',
+    default: '实习生',
+  })
   department: string;
 
   @Expose()
@@ -152,6 +183,10 @@ export class PublicUserDto {
   isActive: boolean;
 
   @Expose()
-  @ApiProperty({ description: '用户角色权限', example: 'user', default: 'user' })
+  @ApiProperty({
+    description: '用户角色权限',
+    example: 'user',
+    default: 'user',
+  })
   userRole: string;
 }

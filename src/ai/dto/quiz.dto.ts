@@ -30,18 +30,19 @@ const QuestionSchema = z.object({
 });
 
 // 测验结构（整体）
-export const QuizSchema = (quizNums: number) => z.object({
-  title: z.string().describe('测验标题，简洁概括文本主题'),
-  questions: z
-    .array(QuestionSchema)
-    .length(quizNums ?? 5)
-    .describe(`${quizNums ?? 5}道选择题，覆盖文本核心知识点`),
-});
+export const QuizSchema = (quizNums: number) =>
+  z.object({
+    title: z.string().describe('测验标题，简洁概括文本主题'),
+    questions: z
+      .array(QuestionSchema)
+      .length(quizNums ?? 5)
+      .describe(`${quizNums ?? 5}道选择题，覆盖文本核心知识点`),
+  });
 
 // 导出类型声明
 export type QuizOption = z.infer<typeof OptionSchema>;
 export type QuizQuestion = z.infer<typeof QuestionSchema>;
-export type Quiz = z.infer<typeof QuizSchema >;
+export type Quiz = z.infer<typeof QuizSchema>;
 
 // 生成测验请求体
 export class GenerateQuizDto {
