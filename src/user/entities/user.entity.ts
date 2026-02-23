@@ -96,12 +96,12 @@ export class User {
     default: '部员',
   })
   @Property({ default: '部员' })
-  position: string = '部员';
+  position?: string = '部员';
 
   @Expose()
   @ApiProperty({ description: 'QQ号', example: '123456789', nullable: true })
   @Property({ nullable: true })
-  qqNumber: string = '123456789';
+  qqNumber?: string = '123456789';
 
   @Exclude()
   @Property({ nullable: true })
@@ -177,6 +177,21 @@ export class PublicUserDto {
     default: '实习生',
   })
   department: string;
+
+  @Expose()
+  @ApiProperty({
+    description: '用户职位',
+    example: '部员',
+    enum: ['部员', '部长', '实习部员'],
+    default: '部员',
+  })
+  @Property({ default: '部员' })
+  position?: string = '部员';
+
+  @Expose()
+  @ApiProperty({ description: 'QQ号', example: '123456789', nullable: true })
+  @Property({ nullable: true })
+  qqNumber?: string = '123456789';
 
   @Expose()
   @ApiProperty({ description: '用户是否处于激活状态', example: true })

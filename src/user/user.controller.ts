@@ -831,6 +831,8 @@ export class UserController {
         name: user.name,
         phone: user.phone,
         email: user.email,
+        position: user.position ?? '未指派',
+        qqNumber: user.qqNumber ?? '',
       });
     }
 

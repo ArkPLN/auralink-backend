@@ -18,6 +18,14 @@ export class RosterUserDto {
   @Expose()
   @ApiProperty({ description: '电子邮箱', example: 'user@example.com' })
   email?: string;
+
+  @Expose()
+  @ApiProperty({ description: '用户职位', example: '部员', nullable: true })
+  position?: string;
+
+  @Expose()
+  @ApiProperty({ description: 'QQ号', example: '123456789', nullable: true })
+  qqNumber?: string;
 }
 
 export class RosterResponseDto {

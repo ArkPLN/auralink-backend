@@ -45,6 +45,23 @@ export class MeResponseDto {
 
   @Expose()
   @ApiProperty({
+    description: '用户职位',
+    example: '部员',
+    enum: ['部员', '部长', '实习部员'],
+    default: '部员',
+  })
+  position?: string;
+
+  @Expose()
+  @ApiProperty({
+    description: 'QQ号',
+    example: '123456789',
+    required: false,
+  })
+  qqNumber?: string;
+
+  @Expose()
+  @ApiProperty({
     description: '用户是否处于激活状态',
     example: true,
     default: true,
@@ -109,6 +126,23 @@ export class UserResponseDto {
     default: '实习生',
   })
   department: string;
+
+  @Expose()
+  @ApiProperty({
+    description: '用户职位',
+    example: '部员',
+    enum: ['部员', '部长', '实习部员'],
+    default: '部员',
+  })
+  position?: string;
+
+  @Expose()
+  @ApiProperty({
+    description: 'QQ号',
+    example: '123456789',
+    required: false,
+  })
+  qqNumber?: string;
 
   @Expose()
   @ApiProperty({
