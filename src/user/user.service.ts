@@ -179,4 +179,8 @@ export class UserService {
       });
     }
   }
+
+  async findAllActiveUsers(): Promise<User[]> {
+    return this.em.find(User, { isActive: true });
+  }
 }

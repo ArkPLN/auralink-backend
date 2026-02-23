@@ -1,6 +1,6 @@
 import { Entity, PrimaryKey, Property, Unique } from '@mikro-orm/core';
-import { ApiProperty, OmitType } from '@nestjs/swagger';
-import { Exclude, Expose, Type } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
+import { Exclude, Expose } from 'class-transformer';
 
 @Entity({ tableName: 'users' })
 export class User {
@@ -24,6 +24,10 @@ export class User {
 
   @Exclude()
   @Property()
+  @ApiProperty({
+    description: '用户密码（哈希存储）',
+    example: 'hashedPassword123',
+  })
   password!: string;
 
   @Expose()
@@ -117,15 +121,37 @@ export class User {
   updatedAt: Date = new Date();
 }
 
-export class UserResponseDto extends OmitType(User, [
-  'password',
-  'hashedRefreshToken',
-] as const) {}
+@Exclude()
+export class PublicUserDto {
+  @Expose()
+  @ApiProperty({ description: '用户唯一标识ID', example: 1 })
+  id: number;
 
-export class PublicUserDto extends OmitType(User, [
-  'password',
-  'hashedRefreshToken',
-  'avatarUrl',
-  'createdAt',
-  'updatedAt',
-] as const) {}
+  @Expose()
+  @ApiProperty({ description: '学校学号', example: '2023001001' })
+  schoolId: string;
+
+  @Expose()
+  @ApiProperty({ description: '用户真实姓名', example: '张三', required: false })
+  name?: string;
+
+  @Expose()
+  @ApiProperty({ description: '用户手机号', example: '13800138000', required: false })
+  phone?: string;
+
+  @Expose()
+  @ApiProperty({ description: '用户邮箱地址', example: 'user@example.com', required: false })
+  email?: string;
+
+  @Expose()
+  @ApiProperty({ description: '用户所属部门', example: '技术部', default: '实习生' })
+  department: string;
+
+  @Expose()
+  @ApiProperty({ description: '用户是否处于激活状态', example: true })
+  isActive: boolean;
+
+  @Expose()
+  @ApiProperty({ description: '用户角色权限', example: 'user', default: 'user' })
+  userRole: string;
+}

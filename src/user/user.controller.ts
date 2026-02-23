@@ -52,6 +52,7 @@ import {
   AdminResponseDto,
 } from '../adminlog/dto/admin-user.dto';
 import { AvatarUploadResponseDto } from './dto/avatar.dto';
+import { RosterResponseDto, RosterUserDto } from './dto/roster.dto';
 import * as bcrypt from 'bcrypt';
 
 @ApiTags('用户模块')
@@ -798,5 +799,41 @@ export class UserController {
     await this.em.nativeDelete(User, { id: deleteDto.id });
 
     return { message: '删除成功' };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Get('roster')
+  @ApiOperation({
+    summary: '获取用户花名册',
+    description:
+      '获取所有活跃用户的花名册，按部门分类。每个用户包含学号、姓名、电话和邮箱。',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '返回按部门分类的用户花名册',
+    type: RosterResponseDto,
+  })
+  async getRoster(): Promise<RosterResponseDto> {
+    const users = await this.userService.findAllActiveUsers();
+
+    const roster: Record<string, RosterUserDto[]> = {};
+
+    for (const user of users) {
+      const department = user.department || '未分配';
+
+      if (!roster[department]) {
+        roster[department] = [];
+      }
+
+      roster[department].push({
+        schoolId: user.schoolId,
+        name: user.name,
+        phone: user.phone,
+        email: user.email,
+      });
+    }
+
+    return { roster };
   }
 }
