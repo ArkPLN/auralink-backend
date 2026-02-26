@@ -29,6 +29,10 @@ export class RosterUserDto {
 }
 
 export class RosterResponseDto {
+  @Expose()
+  @ApiProperty({ description: '总用户数', example: 100 })
+  total: number;
+
   @ApiProperty({ description: '花名册数据，以部门名称为键' })
   roster: Record<string, RosterUserDto[]>;
 }

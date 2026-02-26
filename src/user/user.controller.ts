@@ -836,6 +836,9 @@ export class UserController {
       });
     }
 
-    return { roster };
+    return {
+      total: users.length,
+      roster,
+    };
   }
 }
