@@ -53,6 +53,7 @@ import {
 } from '../adminlog/dto/admin-user.dto';
 import { AvatarUploadResponseDto } from './dto/avatar.dto';
 import { RosterResponseDto, RosterUserDto } from './dto/roster.dto';
+import { AllUsersResponseDto, SimpleUserDto } from './dto/all-users.dto';
 import * as bcrypt from 'bcrypt';
 
 @ApiTags('用户模块')
@@ -803,6 +804,32 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
+  @Get('all')
+  @ApiOperation({
+    summary: '获取所有用户信息',
+    description:
+      '获取所有活跃用户的基本信息列表。用于成员选择器等需要展示全部用户的场景。',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '返回所有活跃用户的基本信息',
+    type: AllUsersResponseDto,
+  })
+  async findAllUsers(): Promise<AllUsersResponseDto> {
+    const users = await this.userService.findAllActiveUsers();
+
+    const simpleUsers = plainToInstance(SimpleUserDto, users, {
+      excludeExtraneousValues: true,
+    });
+
+    return {
+      total: users.length,
+      users: simpleUsers,
+    };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @Get('roster')
   @ApiOperation({
     summary: '获取用户花名册',
@@ -827,6 +854,7 @@ export class UserController {
       }
 
       roster[department].push({
+        id: user.id,
         schoolId: user.schoolId,
         name: user.name,
         phone: user.phone,

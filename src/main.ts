@@ -8,7 +8,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const orm = app.get(MikroORM);
-  const generator = orm.getSchemaGenerator();
+  const generator = orm.schema;
   await generator.updateSchema();
 
   app.enableCors({
@@ -40,9 +40,7 @@ async function bootstrap() {
   app.use(
     '/reference',
     apiReference({
-      spec: {
-        content: document,
-      },
+      content: document,
       theme: 'purple',
       pageTitle: '社团系统 API 文档',
     }),
