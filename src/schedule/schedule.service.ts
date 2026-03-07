@@ -1,8 +1,20 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { EntityManager, MikroORM } from '@mikro-orm/core';
-import { Schedule, ScheduleParticipant, ParticipantStatus, ScheduleStatus } from './entities/schedule.entity';
+import {
+  Schedule,
+  ScheduleParticipant,
+  ParticipantStatus,
+  ScheduleStatus,
+} from './entities/schedule.entity';
 import { ScheduleAttachment } from './entities/schedule-attachment.entity';
-import { ScheduleNotification, NotificationType } from './entities/schedule-notification.entity';
+import {
+  ScheduleNotification,
+  NotificationType,
+} from './entities/schedule-notification.entity';
 import { User } from '../user/entities/user.entity';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { UpdateScheduleDto } from './dto/update-schedule.dto';
@@ -48,14 +60,14 @@ export class ScheduleService {
       status: schedule.status,
       maxParticipants: schedule.maxParticipants,
       currentParticipants: participants.length,
-      attachments: schedule.attachments.getItems().map(a => ({
+      attachments: schedule.attachments.getItems().map((a) => ({
         id: a.id,
         fileName: a.fileName,
         fileUrl: a.fileUrl,
         fileSize: a.fileSize,
         fileType: a.fileType,
       })),
-      participants: participants.map(p => ({
+      participants: participants.map((p) => ({
         id: p.id,
         user: {
           id: p.user.id,
@@ -85,7 +97,10 @@ export class ScheduleService {
   /**
    * 创建日程
    */
-  async createSchedule(userId: number, dto: CreateScheduleDto): Promise<ScheduleResponseDto> {
+  async createSchedule(
+    userId: number,
+    dto: CreateScheduleDto,
+  ): Promise<ScheduleResponseDto> {
     const creator = await this.em.findOne(User, { id: userId });
     if (!creator) {
       throw new NotFoundException('用户不存在');
@@ -106,7 +121,9 @@ export class ScheduleService {
     // 关联附件
     if (dto.attachmentIds && dto.attachmentIds.length > 0) {
       for (const attachmentId of dto.attachmentIds) {
-        const attachment = await this.em.findOne(ScheduleAttachment, { id: attachmentId });
+        const attachment = await this.em.findOne(ScheduleAttachment, {
+          id: attachmentId,
+        });
         if (attachment) {
           attachment.schedule = schedule;
         }
@@ -120,7 +137,11 @@ export class ScheduleService {
     }
 
     // 重新加载以获取关联数据
-    await this.em.populate(schedule, ['creator', 'participants.user', 'attachments']);
+    await this.em.populate(schedule, [
+      'creator',
+      'participants.user',
+      'attachments',
+    ]);
     return this.toResponseDto(schedule);
   }
 
@@ -128,9 +149,13 @@ export class ScheduleService {
    * 获取日程详情
    */
   async getScheduleById(id: number): Promise<ScheduleResponseDto> {
-    const schedule = await this.em.findOne(Schedule, { id }, {
-      populate: ['creator', 'participants.user', 'attachments'],
-    });
+    const schedule = await this.em.findOne(
+      Schedule,
+      { id },
+      {
+        populate: ['creator', 'participants.user', 'attachments'],
+      },
+    );
     if (!schedule) {
       throw new NotFoundException('日程不存在');
     }
@@ -165,20 +190,28 @@ export class ScheduleService {
     });
 
     return {
-      items: schedules.map(s => this.toResponseDto(s)),
+      items: schedules.map((s) => this.toResponseDto(s)),
       total,
       page,
-      pageSize
+      pageSize,
     };
   }
 
   /**
    * 更新日程
    */
-  async updateSchedule(id: number, userId: number, dto: UpdateScheduleDto): Promise<ScheduleResponseDto> {
-    const schedule = await this.em.findOne(Schedule, { id }, {
-      populate: ['creator', 'participants.user', 'attachments'],
-    });
+  async updateSchedule(
+    id: number,
+    userId: number,
+    dto: UpdateScheduleDto,
+  ): Promise<ScheduleResponseDto> {
+    const schedule = await this.em.findOne(
+      Schedule,
+      { id },
+      {
+        populate: ['creator', 'participants.user', 'attachments'],
+      },
+    );
 
     if (!schedule) {
       throw new NotFoundException('日程不存在');
@@ -194,13 +227,18 @@ export class ScheduleService {
     if (dto.location !== undefined) schedule.location = dto.location;
     if (dto.startTime) schedule.startTime = new Date(dto.startTime);
     if (dto.endTime) schedule.endTime = new Date(dto.endTime);
-    if (dto.maxParticipants !== undefined) schedule.maxParticipants = dto.maxParticipants;
+    if (dto.maxParticipants !== undefined)
+      schedule.maxParticipants = dto.maxParticipants;
 
     schedule.updatedAt = new Date();
     await this.em.flush();
 
     // 发送更新通知
-    await this.notifyParticipants(schedule, NotificationType.UPDATE, '日程信息已更新');
+    await this.notifyParticipants(
+      schedule,
+      NotificationType.UPDATE,
+      '日程信息已更新',
+    );
 
     return this.toResponseDto(schedule);
   }
@@ -208,10 +246,17 @@ export class ScheduleService {
   /**
    * 取消日程
    */
-  async cancelSchedule(id: number, userId: number): Promise<ScheduleResponseDto> {
-    const schedule = await this.em.findOne(Schedule, { id }, {
-      populate: ['creator', 'participants.user', 'attachments'],
-    });
+  async cancelSchedule(
+    id: number,
+    userId: number,
+  ): Promise<ScheduleResponseDto> {
+    const schedule = await this.em.findOne(
+      Schedule,
+      { id },
+      {
+        populate: ['creator', 'participants.user', 'attachments'],
+      },
+    );
 
     if (!schedule) {
       throw new NotFoundException('日程不存在');
@@ -227,7 +272,11 @@ export class ScheduleService {
     await this.em.flush();
 
     // 发送取消通知
-    await this.notifyParticipants(schedule, NotificationType.CANCELLATION, '日程已被取消');
+    await this.notifyParticipants(
+      schedule,
+      NotificationType.CANCELLATION,
+      '日程已被取消',
+    );
 
     return this.toResponseDto(schedule);
   }
@@ -235,10 +284,18 @@ export class ScheduleService {
   /**
    * 邀请成员
    */
-  async inviteMembers(id: number, userId: number, dto: InviteMembersDto): Promise<ScheduleResponseDto> {
-    const schedule = await this.em.findOne(Schedule, { id }, {
-      populate: ['creator', 'participants.user', 'attachments'],
-    });
+  async inviteMembers(
+    id: number,
+    userId: number,
+    dto: InviteMembersDto,
+  ): Promise<ScheduleResponseDto> {
+    const schedule = await this.em.findOne(
+      Schedule,
+      { id },
+      {
+        populate: ['creator', 'participants.user', 'attachments'],
+      },
+    );
 
     if (!schedule) {
       throw new NotFoundException('日程不存在');
@@ -255,12 +312,14 @@ export class ScheduleService {
       inviteeIds = dto.userIds;
     } else if (dto.departments && dto.departments.length > 0) {
       // 按部门查找用户
-      const users = await this.em.find(User, { department: { $in: dto.departments } });
-      inviteeIds = users.map(u => u.id);
+      const users = await this.em.find(User, {
+        department: { $in: dto.departments },
+      });
+      inviteeIds = users.map((u) => u.id);
     } else if (dto.inviteAll) {
       // 邀请全体成员
       const users = await this.em.find(User, { isActive: true });
-      inviteeIds = users.map(u => u.id);
+      inviteeIds = users.map((u) => u.id);
     }
 
     if (inviteeIds.length > 0) {
@@ -282,7 +341,7 @@ export class ScheduleService {
           schedule: schedule.id,
           user: { id: uid },
         });
-        
+
         if (!existing) {
           const user = await this.em.findOne(User, { id: uid });
           if (user) {
@@ -312,9 +371,13 @@ export class ScheduleService {
    * 提交请假
    */
   async submitLeave(id: number, userId: number, dto: SubmitLeaveDto) {
-    const schedule = await this.em.findOne(Schedule, { id }, {
-      populate: ['creator'],
-    });
+    const schedule = await this.em.findOne(
+      Schedule,
+      { id },
+      {
+        populate: ['creator'],
+      },
+    );
     if (!schedule) {
       throw new NotFoundException('日程不存在');
     }
@@ -359,9 +422,13 @@ export class ScheduleService {
    * 获取请假列表（供发起人查看）
    */
   async getLeaveRequests(id: number, userId: number) {
-    const schedule = await this.em.findOne(Schedule, { id }, {
-      populate: ['creator'],
-    });
+    const schedule = await this.em.findOne(
+      Schedule,
+      { id },
+      {
+        populate: ['creator'],
+      },
+    );
     if (!schedule) {
       throw new NotFoundException('日程不存在');
     }
@@ -371,15 +438,19 @@ export class ScheduleService {
       throw new ForbiddenException('无权限查看请假信息');
     }
 
-    const leaves = await this.em.find(ScheduleParticipant, {
-      schedule: schedule.id,
-      status: ParticipantStatus.LEAVE,
-    }, {
-      populate: ['user'],
-      orderBy: { leaveTime: 'DESC' },
-    });
+    const leaves = await this.em.find(
+      ScheduleParticipant,
+      {
+        schedule: schedule.id,
+        status: ParticipantStatus.LEAVE,
+      },
+      {
+        populate: ['user'],
+        orderBy: { leaveTime: 'DESC' },
+      },
+    );
 
-    return leaves.map(l => ({
+    return leaves.map((l) => ({
       id: l.id,
       user: {
         id: l.user.id,
@@ -427,22 +498,31 @@ export class ScheduleService {
    * 导出 CSV 数据
    */
   async exportToCsv(userId: number, type: 'upcoming' | 'history') {
-    const schedules = await this.em.find(Schedule, {
-      participants: { user: { id: userId } },
-      ...(type === 'upcoming' ? { endTime: { $gte: new Date() } } : { endTime: { $lt: new Date() } }),
-    }, {
-      populate: ['creator', 'participants.user'],
-      orderBy: { startTime: 'ASC' },
-    });
+    const schedules = await this.em.find(
+      Schedule,
+      {
+        participants: { user: { id: userId } },
+        ...(type === 'upcoming'
+          ? { endTime: { $gte: new Date() } }
+          : { endTime: { $lt: new Date() } }),
+      },
+      {
+        populate: ['creator', 'participants.user'],
+        orderBy: { startTime: 'ASC' },
+      },
+    );
 
-    return schedules.map(s => ({
+    return schedules.map((s) => ({
       id: s.id,
       title: s.title,
       location: s.location || '',
       startTime: s.startTime.toISOString(),
       endTime: s.endTime.toISOString(),
       creator: s.creator.name || s.creator.schoolId,
-      participants: s.participants.getItems().map(p => p.user.name || p.user.schoolId).join(', '),
+      participants: s.participants
+        .getItems()
+        .map((p) => p.user.name || p.user.schoolId)
+        .join(', '),
       status: s.status,
     }));
   }
@@ -516,9 +596,13 @@ export class ScheduleService {
     type: NotificationType,
     message: string,
   ) {
-    const participants = await this.em.find(ScheduleParticipant, {
-      schedule: schedule.id,
-    }, { populate: ['user'] });
+    const participants = await this.em.find(
+      ScheduleParticipant,
+      {
+        schedule: schedule.id,
+      },
+      { populate: ['user'] },
+    );
 
     for (const p of participants) {
       await this.createNotification(

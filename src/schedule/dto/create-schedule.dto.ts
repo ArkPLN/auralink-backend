@@ -1,4 +1,12 @@
-import { IsString, IsOptional, IsDateString, IsInt, Min, IsArray, ValidateNested } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsDateString,
+  IsInt,
+  Min,
+  IsArray,
+  ValidateNested,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -7,7 +15,10 @@ export class CreateScheduleDto {
   @IsString()
   title!: string;
 
-  @ApiPropertyOptional({ description: '活动详情', example: '讨论下个月的活动安排' })
+  @ApiPropertyOptional({
+    description: '活动详情',
+    example: '讨论下个月的活动安排',
+  })
   @IsString()
   @IsOptional()
   description?: string;

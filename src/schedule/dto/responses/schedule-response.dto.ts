@@ -1,6 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserResponseDto } from '../../../user/dto/user-response.dto';
-import { ScheduleStatus, ParticipantStatus } from '../../entities/schedule.entity';
+import {
+  ScheduleStatus,
+  ParticipantStatus,
+} from '../../entities/schedule.entity';
 
 export class AttachmentResponseDto {
   @ApiProperty()

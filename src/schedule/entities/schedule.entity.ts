@@ -1,4 +1,13 @@
-import { Entity, PrimaryKey, Property, ManyToOne, Enum, OneToMany, Collection, Unique } from '@mikro-orm/core';
+import {
+  Entity,
+  PrimaryKey,
+  Property,
+  ManyToOne,
+  Enum,
+  OneToMany,
+  Collection,
+  Unique,
+} from '@mikro-orm/core';
 import { User } from '../../user/entities/user.entity';
 import type { ScheduleAttachment } from './schedule-attachment.entity';
 

@@ -3,7 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { defineConfig, PostgreSqlDriver } from '@mikro-orm/postgresql'; 
+import { defineConfig, PostgreSqlDriver } from '@mikro-orm/postgresql';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { AdminlogModule } from './adminlog/adminlog.module';
@@ -14,7 +14,7 @@ import { AiModule } from './ai/ai.module';
 import { ScheduleModule } from './schedule/schedule.module';
 
 @Module({
-  imports:[
+  imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env.local', '.env'],
@@ -22,7 +22,7 @@ import { ScheduleModule } from './schedule/schedule.module';
     MikroOrmModule.forRootAsync({
       inject: [ConfigService],
       // 【修复关键】：driver 必须放在这里，作为 forRootAsync 的直接属性！
-      driver: PostgreSqlDriver, 
+      driver: PostgreSqlDriver,
       useFactory: (configService: ConfigService) => {
         // defineConfig 内部不再需要写 driver，它会自动推断
         return defineConfig({
@@ -45,7 +45,7 @@ import { ScheduleModule } from './schedule/schedule.module';
     ScheduleModule,
   ],
   controllers: [AppController],
-  providers:[
+  providers: [
     AppService,
     {
       provide: APP_INTERCEPTOR,

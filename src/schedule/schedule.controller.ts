@@ -40,7 +40,11 @@ export class ScheduleController {
 
   @Get()
   @ApiOperation({ summary: '获取用户的日程列表' })
-  @ApiQuery({ name: 'type', enum: ['upcoming', 'history', 'all'], required: false })
+  @ApiQuery({
+    name: 'type',
+    enum: ['upcoming', 'history', 'all'],
+    required: false,
+  })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'pageSize', required: false })
   @ApiResponse({ type: ScheduleListResponseDto })
@@ -120,7 +124,10 @@ export class ScheduleController {
   @Post(':id/confirm')
   @ApiOperation({ summary: '确认参加活动' })
   @ApiResponse({ status: 200, description: '确认成功' })
-  async confirmParticipation(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+  async confirmParticipation(
+    @Req() req: any,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
     const userPayload = req.user as JwtPayload;
     const userId = userPayload.sub;
     return this.scheduleService.confirmParticipation(id, userId);
@@ -142,7 +149,10 @@ export class ScheduleController {
   @Get(':id/leaves')
   @ApiOperation({ summary: '获取请假列表（仅创建者可见）' })
   @ApiResponse({ status: 200, description: '请假列表' })
-  async getLeaveRequests(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+  async getLeaveRequests(
+    @Req() req: any,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
     const userPayload = req.user as JwtPayload;
     const userId = userPayload.sub;
     return this.scheduleService.getLeaveRequests(id, userId);
@@ -177,7 +187,8 @@ export class ScheduleController {
   @ApiResponse({ type: NotificationListResponseDto })
   async getNotifications(
     @Req() req: any,
-    @Query('unreadOnly', new ParseBoolPipe({ optional: true })) unreadOnly?: boolean,
+    @Query('unreadOnly', new ParseBoolPipe({ optional: true }))
+    unreadOnly?: boolean,
   ) {
     const userPayload = req.user as JwtPayload;
     const userId = userPayload.sub;
@@ -205,7 +216,10 @@ export class ScheduleController {
         .map((header) => {
           const value = item[header];
           // 处理包含逗号或引号的字段
-          if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+          if (
+            typeof value === 'string' &&
+            (value.includes(',') || value.includes('"'))
+          ) {
             return `"${value.replace(/"/g, '""')}"`;
           }
           return value;

@@ -10,7 +10,16 @@ import { ScheduleNotification } from './entities/schedule-notification.entity';
 import { ScheduleAttachment } from './entities/schedule-attachment.entity';
 
 @Module({
-  imports: [UserModule, S3Module, MikroOrmModule.forFeature([Schedule, ScheduleNotification, ScheduleAttachment,ScheduleParticipant])],
+  imports: [
+    UserModule,
+    S3Module,
+    MikroOrmModule.forFeature([
+      Schedule,
+      ScheduleNotification,
+      ScheduleAttachment,
+      ScheduleParticipant,
+    ]),
+  ],
   controllers: [ScheduleController],
   providers: [ScheduleService],
   exports: [ScheduleService],

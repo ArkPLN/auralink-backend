@@ -9,7 +9,10 @@ export class InviteMembersDto {
   @IsOptional()
   userIds?: number[];
 
-  @ApiPropertyOptional({ description: '按部门邀请', example: ['技术部', '宣传部'] })
+  @ApiPropertyOptional({
+    description: '按部门邀请',
+    example: ['技术部', '宣传部'],
+  })
   @IsArray()
   @IsString({ each: true })
   @IsOptional()
